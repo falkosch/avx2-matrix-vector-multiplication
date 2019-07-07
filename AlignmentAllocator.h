@@ -7,6 +7,12 @@
 
 #include <cstddef>
 
+#if defined(__GNUC__)
+#include <x86intrin.h>
+#else
+#include <intrin.h>
+#endif
+
 template <typename T, std::size_t N = sizeof(__m512)>
 class AlignmentAllocator {
 public:

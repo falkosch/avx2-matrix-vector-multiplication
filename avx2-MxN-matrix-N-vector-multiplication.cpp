@@ -16,7 +16,6 @@
 // we have 8 single precision float elements in an AVX register
 #define NUM_FLOATS_PER_AVX_REGISTER sizeof(__m256) / sizeof(float)
 #define NUM_FLOATS_PER_HALF_AVX_REGISTER sizeof(__m128) / sizeof(float)
-#define _MM_BROADCAST(x) 
 
 // we pad row lengths (count of columns) by the count of elements in the AVX registers
 // so that we have it easier to handle the vector data in the transformation
@@ -40,6 +39,9 @@ const std::size_t avxRegistersNeeded(const std::size_t elements, const std::size
 // returns the end ptr for the given counts of elements assuming the data layout is aligned to AVX register sizes
 const float * const avxEndPtr(const float * const startPtr, const std::size_t elements)
 {
+	assert(startPtr != nullptr);
+	assert(elements > 0);
+
 	return startPtr + avxRegistersNeeded(elements) * NUM_FLOATS_PER_AVX_REGISTER;
 }
 
@@ -74,7 +76,7 @@ struct AVXVector
 		padded(padSize(elements)),
 		data()
 	{
-		assert(this->elements > 0);
+		assert(elements > 0);
 
 		this->data.resize(this->padded, PADDING_VALUE);
 
@@ -109,8 +111,8 @@ struct ScalarMatrix
 		columns(columns),
 		data()
 	{
-		assert(this->rows > 0);
-		assert(this->columns > 0);
+		assert(rows > 0);
+		assert(columns > 0);
 
 		this->data.resize(this->rows * this->columns, INITIAL_VALUE);
 	}
@@ -143,11 +145,17 @@ struct TransformHelper
 		resultPtrStart(resultPtrStart),
 		resultPtrEnd()
 	{
+		assert(rows > 0);
+		assert(dataPtrStart != nullptr);
+		assert(resultPtrStart != nullptr);
+
 		this->resultPtrEnd = resultPtrStart + this->avxElementsPerColumn;
 	}
 
 	void operator()(const std::size_t column, __m256 inputBroadcast) const
 	{
+		assert(column >= 0);
+
 		// Thanks to the SOA layout, each row in SOAMatrix contains AVX fitting partial vectors of
 		// the elements of the corresponding column "c" in the AOS matrix, so that we can directly
 		// load the data into fitting AVX registers, multiply the elements and add the result back
@@ -184,8 +192,8 @@ struct SOAMatrix
 		padded(padSize(original.rows)),
 		data()
 	{
-		assert(this->rows > 0);
-		assert(this->columns > 0);
+		assert(original.rows > 0);
+		assert(original.columns > 0);
 
 		// for SOA structures, the rows (count of columns) are padded
 		this->data.resize(this->padded * this->columns, PADDING_VALUE);
@@ -218,7 +226,7 @@ struct SOAMatrix
 	{
 		assert(inputVector.elements == this->columns);
 
-		// HERE is the MOST IMPORTANT code in this examples.
+		// HERE is the MOST IMPORTANT code in this example.
 
 		auto result = AVXVector(this->rows, 0.0f);
 		auto transformHelper = TransformHelper(this->rows, this->data.data(), result.data.data());
@@ -317,8 +325,12 @@ struct SOAMatrix
 
 int main()
 {
-	auto inputVectorSize = 100000;
-	auto outputVectorSize = 10000;
+	// Be cautious with the sizes here. They determine how much memory is used when running the code.
+	// 10000x10000 already uses around 220 MB memory.
+	// On my i7 7700k it runs within 25s in debug mode.
+	// In release mode it is less than 1s.
+	auto inputVectorSize = 5000;
+	auto outputVectorSize = 5000;
 
 	auto inputVector = AVXVector(inputVectorSize);
 	auto aosTransform = ScalarMatrix(outputVectorSize, inputVectorSize);
