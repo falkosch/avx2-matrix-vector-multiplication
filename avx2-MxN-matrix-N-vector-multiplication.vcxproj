@@ -72,10 +72,10 @@
     <ClCompile Include="avx2-MxN-matrix-N-vector-multiplication.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AlignmentAllocator.h" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include=".clang-format" />
+    <None Include=".gitignore" />
+    <None Include="LICENSE" />
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <array>
 #include <vector>
 #include <cassert>
 
@@ -8,84 +9,7 @@
 #include <intrin.h>
 #endif
 
-#include "AlignmentAllocator.h"
-
 #define INITIAL_VALUE 1.0f
-#define PADDING_VALUE 0.0f // value of elements added due to padding of the data sizes
-
-// we have 8 single precision float elements in an AVX register
-#define NUM_FLOATS_PER_AVX_REGISTER sizeof(__m256) / sizeof(float)
-#define NUM_FLOATS_PER_HALF_AVX_REGISTER sizeof(__m128) / sizeof(float)
-
-// we pad row lengths (count of columns) by the count of elements in the AVX registers
-// so that we have it easier to handle the vector data in the transformation
-const std::size_t padSize(const std::size_t size, const std::size_t padding = NUM_FLOATS_PER_AVX_REGISTER) {
-    assert(size > 0);
-    assert(padding > 0);
-
-    return ((size - 1) / padding + 1) * padding;
-}
-
-// returns the count of AVX registers needed to fit all elements of a given size in bytes
-const std::size_t avxRegistersNeeded(const std::size_t elements, const std::size_t elementSizeInBytes = sizeof(float)) {
-    assert(elements > 0);
-    assert(elementSizeInBytes > 0);
-
-    return (elements * elementSizeInBytes - 1) / sizeof(__m256) + 1;
-}
-
-// returns the end ptr for the given counts of elements assuming the data layout is aligned to AVX register sizes
-const float * const avxEndPtr(const float * const startPtr, const std::size_t elements) {
-    assert(startPtr != nullptr);
-    assert(elements > 0);
-
-    return startPtr + avxRegistersNeeded(elements) * NUM_FLOATS_PER_AVX_REGISTER;
-}
-
-template<int i>
-const __m256 broadcast(const __m256 value) {
-    return _mm256_permute_ps(value, _MM_SHUFFLE(i, i, i, i));
-}
-
-const __m256 unpackLow(const __m256 packed) {
-    return _mm256_permute2f128_ps(packed, packed, 0);
-}
-
-const __m256 unpackHigh(const __m256 packed) {
-    return _mm256_permute2f128_ps(packed, packed, 1 + 1 << 4);
-}
-
-struct AVXVector
-{
-    std::size_t elements;
-
-    // padded size of elements
-    std::size_t padded;
-
-    std::vector<float, AlignmentAllocator<float>> data;
-
-    AVXVector(const std::size_t elements, const float initialValue = INITIAL_VALUE)
-        :
-        elements(elements),
-        padded(padSize(elements)),
-        data() {
-        assert(elements > 0);
-
-        this->data.resize(this->padded, PADDING_VALUE);
-
-        for (auto i = 0; i < this->elements; ++i) {
-            this->at(i) = initialValue;
-        }
-    }
-
-    float & at(const std::size_t i) {
-        return this->data.at(i);
-    }
-
-    const float & at(const std::size_t i) const {
-        return this->data.at(i);
-    }
-};
 
 // AOS representation of a scalar matrix
 struct ScalarMatrix
@@ -93,68 +17,121 @@ struct ScalarMatrix
     std::size_t rows;
     std::size_t columns;
 
-    std::vector<float> data;
+    std::vector<float> components;
 
-    ScalarMatrix(const std::size_t rows, const std::size_t columns)
-        :
-        rows(rows),
-        columns(columns),
-        data() {
+    ScalarMatrix(const std::size_t rows, const std::size_t columns, const float initialValue = INITIAL_VALUE)
+        : rows{ rows },
+          columns{ columns },
+          components(rows * columns, initialValue) {
         assert(rows > 0);
         assert(columns > 0);
-
-        this->data.resize(this->rows * this->columns, INITIAL_VALUE);
     }
 
     float & at(const std::size_t r, const std::size_t c) {
-        return this->data.at(r * this->columns + c);
+        return this->components.at(r * this->columns + c);
     }
 
-    const float & at(const std::size_t r, const std::size_t c) const {
-        return this->data.at(r * this->columns + c);
+    auto at(const std::size_t r, const std::size_t c) const {
+        return this->components.at(r * this->columns + c);
+    }
+};
+
+#define PADDING_VALUE 0.0f // value of elements added due to padding of the data sizes
+
+// we have 8 single precision float elements in an AVX register
+#define NUM_FLOATS_PER_AVX_REGISTER (sizeof(__m256) / sizeof(float))
+
+// we pad lengths by the count of elements in the AVX registers
+// so that we have it easier to handle the vector data in the transformation
+auto padSize(const std::size_t size) {
+    assert(size > 0);
+
+    return (size - std::size_t{ 1 }) / NUM_FLOATS_PER_AVX_REGISTER + std::size_t{ 1 };
+}
+
+template <int i>
+auto broadcast(const __m256 & value) {
+    return _mm256_permute_ps(value, _MM_SHUFFLE(i, i, i, i));
+}
+
+auto unpackLow(const __m256 & packed) {
+    return _mm256_permute2f128_ps(packed, packed, 0);
+}
+
+auto unpackHigh(const __m256 & packed) {
+    return _mm256_permute2f128_ps(packed, packed, 0b00010001);
+}
+
+auto multiplyAdd(const __m256 & partialColumn, const __m256 & inputBroadcast, const __m256 & partialResult) {
+    // will be optimized to a real hardware FMA op if available
+    return _mm256_add_ps(_mm256_mul_ps(partialColumn, inputBroadcast), partialResult);
+}
+
+union alignas(32) AVXPack
+{
+    __m256 packed;
+    std::array<float, 8> components;
+
+    AVXPack(const __m256 & packed)
+        : packed{ packed } {
+    }
+};
+
+struct AVXVector
+{
+    std::size_t elements;
+    std::vector<AVXPack> packs;
+
+    AVXVector(const std::size_t elements, const float initialValue = INITIAL_VALUE)
+        : elements{ elements },
+          packs(padSize(elements), AVXPack{ _mm256_setzero_ps() }) {
+        assert(elements > 0);
+
+        for (std::size_t i{ 0 }; i < elements; ++i) {
+            this->at(i) = initialValue;
+        }
+    }
+
+    float & at(const std::size_t i) {
+        return this->packs.at(i / NUM_FLOATS_PER_AVX_REGISTER).components.at(i % NUM_FLOATS_PER_AVX_REGISTER);
+    }
+
+    auto at(const std::size_t i) const {
+        return this->packs.at(i / NUM_FLOATS_PER_AVX_REGISTER).components.at(i % NUM_FLOATS_PER_AVX_REGISTER);
     }
 };
 
 // multiplies a broadcast vector of one column element in the input vector element-wise with the
 // column vector of a matrix (that is the row in the SOAMatrix).
-// helps the SOAMatrix.avxTransform(const AVXVector &) to split some ocde.
+// helps the SOAMatrix.avxTransform(const AVXVector &) to split some code.
 struct TransformHelper
 {
-    std::size_t avxElementsPerColumn;
-    const float * dataPtrStart;
-    float * resultPtrStart;
-    float * resultPtrEnd;
+    std::size_t packsPerColumn;
+    std::vector<AVXPack>::const_iterator dataStart;
+    std::vector<AVXPack>::iterator resultStart;
+    std::vector<AVXPack>::iterator resultEnd;
 
-    TransformHelper(const std::size_t rows, const float * const dataPtrStart, float * const resultPtrStart)
-        :
-        avxElementsPerColumn(avxRegistersNeeded(rows) * NUM_FLOATS_PER_AVX_REGISTER),
-        dataPtrStart(dataPtrStart),
-        resultPtrStart(resultPtrStart),
-        resultPtrEnd() {
+    TransformHelper(const std::size_t rows, const std::vector<AVXPack>::const_iterator dataStart, const std::vector<AVXPack>::iterator resultStart)
+        : packsPerColumn(padSize(rows)),
+          dataStart(dataStart),
+          resultStart(resultStart),
+          resultEnd(resultStart + padSize(rows)) {
         assert(rows > 0);
-        assert(dataPtrStart != nullptr);
-        assert(resultPtrStart != nullptr);
-
-        this->resultPtrEnd = resultPtrStart + this->avxElementsPerColumn;
     }
 
-    void operator()(const std::size_t column, __m256 inputBroadcast) const {
-        assert(column >= 0);
-
+    void operator()(const std::size_t column, const __m256 & inputBroadcast) const {
         // Thanks to the SOA layout, each row in SOAMatrix contains AVX fitting partial vectors of
         // the elements of the corresponding column "c" in the AOS matrix, so that we can directly
         // load the data into fitting AVX registers, multiply the elements and add the result back
         // into our intermediate result vector.
-        auto rowPtr = this->dataPtrStart + column * this->avxElementsPerColumn;
-        for (auto resultPtr = this->resultPtrStart; resultPtr < this->resultPtrEnd; resultPtr += NUM_FLOATS_PER_AVX_REGISTER,
-            rowPtr += NUM_FLOATS_PER_AVX_REGISTER) {
-            auto partialColumn = _mm256_load_ps(rowPtr);
-            auto partialResult = _mm256_load_ps(resultPtr);
-            auto intermediate = _mm256_fmadd_ps(
-                partialColumn, /* multiply by */ inputBroadcast,
-                /* and add */ partialResult
-            );
-            _mm256_store_ps(resultPtr, intermediate);
+        auto rowIt = this->dataStart + column * this->packsPerColumn;
+        for (auto resultIt = this->resultStart;
+             resultIt != this->resultEnd;
+             resultIt++, rowIt++) {
+            auto partialColumn = (*rowIt).packed;
+            auto partialResult = (*resultIt).packed;
+            auto intermediate = multiplyAdd(partialColumn, /* multiply by */ inputBroadcast, /* and add */ partialResult);
+            (*resultIt).packed = intermediate;
         }
     }
 };
@@ -164,28 +141,24 @@ struct SOAMatrix
     std::size_t rows;
     std::size_t columns;
 
-    // for SOA structures, each column is padded by the "count of rows"
-    std::size_t padded;
+    // count of how many AVXPacks make up a full column
+    std::size_t rowsPaddedSize;
 
-    std::vector<float, AlignmentAllocator<float>> data;
+    std::vector<AVXPack> packs;
 
     SOAMatrix(const ScalarMatrix & original)
-        :
-        rows(original.rows),
-        columns(original.columns),
-        padded(padSize(original.rows)),
-        data() {
+        : rows{ original.rows },
+          columns{ original.columns },
+          rowsPaddedSize{ padSize(rows) },
+          packs(padSize(rows) * original.columns, AVXPack{ _mm256_set1_ps(PADDING_VALUE) }) {
         assert(original.rows > 0);
         assert(original.columns > 0);
 
-        // for SOA structures, the rows (count of columns) are padded
-        this->data.resize(this->padded * this->columns, PADDING_VALUE);
-
-        // the following code looks like a simple copy operation of the data of the original AOSMatrix into this SOAMatrix
+        // the following code looks like a copy operation of the data of the original AOSMatrix into this SOAMatrix
         // however, it is the conversion of the layout of the data from AOS to SOA by simply transposing it in memory.
         // thereby, the count of elements keeps the same as does the unpadded size of the data and the data itself.
-        for (auto r = 0; r < this->rows; ++r) {
-            for (auto c = 0; c < this->columns; ++c) {
+        for (std::size_t r{ 0 }; r < this->rows; ++r) {
+            for (std::size_t c{ 0 }; c < this->columns; ++c) {
                 // see "float & at(std::size_t r, std::size_t c)" for details
                 this->at(r, c) = original.at(r, c);
             }
@@ -193,11 +166,13 @@ struct SOAMatrix
     }
 
     float & at(const std::size_t r, const std::size_t c) {
-        return this->data.at(r + c * this->padded);
+        auto i = r / NUM_FLOATS_PER_AVX_REGISTER + c * this->rowsPaddedSize;
+        return this->packs.at(i).components[r % NUM_FLOATS_PER_AVX_REGISTER];
     }
 
-    const float & at(const std::size_t r, const std::size_t c) const {
-        return this->data.at(r + c * this->padded);
+    auto at(const std::size_t r, const std::size_t c) const {
+        auto i = r / NUM_FLOATS_PER_AVX_REGISTER + c * this->rowsPaddedSize;
+        return this->packs.at(i).components[r % NUM_FLOATS_PER_AVX_REGISTER];
     }
 
     // implements the scalar version of the matrix-vector multiplication as template code
@@ -206,17 +181,16 @@ struct SOAMatrix
 
         // HERE is the MOST IMPORTANT code in this example.
 
-        auto result = AVXVector(this->rows, 0.0f);
-        auto transformHelper = TransformHelper(this->rows, this->data.data(), result.data.data());
+        AVXVector result{ this->rows, 0.0f };
+        TransformHelper transformHelper{ this->rows, this->packs.cbegin(), result.packs.begin() };
 
         // remember that we have the SOA layout, so we iterate on the columns in the outer most loop.
         // in the inner loop, we vertically do the partial dot product step by step.
-        auto column = 0;
-        auto inputPtr = inputVector.data.data();
-        auto inputPtrEnd = avxEndPtr(inputPtr, inputVector.elements);
-        for (; inputPtr < inputPtrEnd; inputPtr += NUM_FLOATS_PER_AVX_REGISTER) {
+        std::size_t column{ 0 };
+        auto inputEnd = inputVector.packs.cend();
+        for (auto inputStart = inputVector.packs.cbegin(); inputStart != inputEnd; inputStart++) {
             // thanks to the padding we can safely load partials of the data into one whole AVX register at once
-            auto partialInput = _mm256_load_ps(inputPtr);
+            auto partialInput = (*inputStart).packed;
 
             // we unroll the NUM_FLOATS_PER_AVX_REGISTER-times loop on the partial input vector
             // and broadcast each element for one iteration in that loop
@@ -265,12 +239,12 @@ struct SOAMatrix
     const AVXVector scalarTransform(const AVXVector & inputVector) const {
         assert(inputVector.elements == this->columns);
 
-        auto result = AVXVector(this->rows, 0.0f);
+        AVXVector result{ this->rows, 0.0f };
 
         // remember that we have the SOA layout, so we iterate on the columns in the outer most loop.
         // in the inner loop we vertically do the partial dot product step by step.
-        for (auto c = 0; c < this->columns; ++c) {
-            for (auto r = 0; r < this->rows; ++r) {
+        for (std::size_t c{ 0 }; c < this->columns; ++c) {
+            for (std::size_t r{ 0 }; r < this->rows; ++r) {
                 result.at(r) += this->at(r, c) * inputVector.at(c);
             }
         }
@@ -284,12 +258,18 @@ struct SOAMatrix
 
         auto avxResult = this->avxTransform(inputVector);
 
+#ifdef _DEBUG
+
         // verify correctness by comparing the scalar result against the result of the AVX computation
-        auto scalarResult = this->scalarTransform(inputVector);
-        assert(scalarResult.elements == avxResult.elements);
-        for (auto i = 0; i < scalarResult.elements; ++i) {
-            assert(scalarResult.at(i) == avxResult.at(i));
+        {
+            auto scalarResult = this->scalarTransform(inputVector);
+            assert(scalarResult.elements == avxResult.elements);
+            for (std::size_t i{ 0 }; i < scalarResult.elements; ++i) {
+                assert(scalarResult.at(i) == avxResult.at(i));
+            }
         }
+
+#endif
 
         return avxResult;
     }
@@ -300,15 +280,16 @@ int main() {
     // 10000x10000 already uses around 220 MB memory.
     // On my i7 7700k it runs within 25s in debug mode.
     // In release mode it is less than 1s.
-    auto inputVectorSize = 5000;
-    auto outputVectorSize = 5000;
+    std::size_t inputVectorSize{ 10000 };
+    std::size_t outputVectorSize{ 10000 };
 
-    auto inputVector = AVXVector(inputVectorSize);
-    auto aosTransform = ScalarMatrix(outputVectorSize, inputVectorSize);
+    ScalarMatrix aosTransform{ outputVectorSize, inputVectorSize };
+
+    AVXVector inputVector{ inputVectorSize };
 
     // 1: we use a "structure of arrays" memory layout for the transform matrix
     // so that we can compute the transform in SIMD preferred way
-    auto soaTransform = SOAMatrix(aosTransform);
+    SOAMatrix soaTransform{ aosTransform };
 
     // 2: transform the input vector to the output vector, see SOAMatrix.transform()
     auto outputVector = soaTransform.transform(inputVector);
@@ -316,7 +297,9 @@ int main() {
     // 3: verify the result. in this example code, the result should be the count of elements of
     // the input vector set on the first two elements of the output vector as all vector and
     // matrix elements are set to 1.0f.
-    for (auto i = 0; i < outputVectorSize; ++i) {
+    for (std::size_t i{ 0 }; i < outputVectorSize; ++i) {
         std::cout << outputVector.at(i) << " ";
     }
+
+    return 0;
 }
