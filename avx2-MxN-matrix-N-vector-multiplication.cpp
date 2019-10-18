@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include <cassert>
+#include <cstdint>
 
 #if defined(__GNUC__)
 #include <x86intrin.h>
@@ -43,7 +44,7 @@ struct ScalarMatrix
 
 // we pad lengths by the count of elements in the AVX registers
 // so that we have it easier to handle the vector data in the transformation
-auto padSize(const std::size_t size) {
+std::size_t padSize(const std::size_t size) {
     assert(size > 0);
 
     return (size - std::size_t{ 1 }) / NUM_FLOATS_PER_AVX_REGISTER + std::size_t{ 1 };
@@ -115,7 +116,7 @@ struct TransformHelper
         : packsPerColumn(padSize(rows)),
           dataStart(dataStart),
           resultStart(resultStart),
-          resultEnd(resultStart + padSize(rows)) {
+          resultEnd(resultStart + static_cast<int64_t>(padSize(rows))) {
         assert(rows > 0);
     }
 
@@ -124,7 +125,7 @@ struct TransformHelper
         // the elements of the corresponding column "c" in the AOS matrix, so that we can directly
         // load the data into fitting AVX registers, multiply the elements and add the result back
         // into our intermediate result vector.
-        auto rowIt = this->dataStart + column * this->packsPerColumn;
+        auto rowIt = this->dataStart + static_cast<int64_t>(column * this->packsPerColumn);
         for (auto resultIt = this->resultStart;
              resultIt != this->resultEnd;
              resultIt++, rowIt++) {
