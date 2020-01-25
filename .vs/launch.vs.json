@@ -1,0 +1,16 @@
+{
+    "version": "0.2.1",
+    "defaults": {},
+    "configurations": [
+        {
+            "type": "dll",
+            "exe": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/Common7/IDE/CommonExtensions/Microsoft/TestWindow/vstest.console.exe",
+            "project": "CMakeLists.txt",
+            "projectTarget": "avx2-variant.native-tests.dll (tests\\avx2-variant.native-tests\\avx2-variant.native-tests.dll)",
+            "name": "avx2-variant.native-tests.dll (tests\\avx2-variant.native-tests\\avx2-variant.native-tests.dll)",
+            "args": [
+                "avx2-variant.native-tests.dll"
+            ]
+        }
+    ]
+}

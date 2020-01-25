@@ -1,0 +1,93 @@
+﻿{
+    "configurations": [
+        {
+            "name": "x64-msvc-debug",
+            "generator": "Ninja",
+            "configurationType": "Debug",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "buildRoot": "${projectDir}/build/${name}",
+            "installRoot": "${projectDir}/install/${name}",
+            "buildCommandArgs": "-v",
+            "cmakeToolchain": "${env.VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake",
+            "variables": [
+                {
+                    "name": "CMAKE_VS_PLATFORM_NAME",
+                    "value": "x64",
+                    "type": "STRING"
+                }
+            ]
+        },
+        {
+            "name": "x64-msvc-release",
+            "generator": "Ninja",
+            "configurationType": "Release",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "buildRoot": "${projectDir}/build/${name}",
+            "installRoot": "${projectDir}/install/${name}",
+            "buildCommandArgs": "-v",
+            "cmakeToolchain": "${env.VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake",
+            "variables": [
+                {
+                    "name": "CMAKE_VS_PLATFORM_NAME",
+                    "value": "x64",
+                    "type": "STRING"
+                }
+            ]
+        },
+        {
+            "name": "x64-clang-release",
+            "generator": "Ninja",
+            "configurationType": "Release",
+            "inheritEnvironments": [ "clang_cl_x64" ],
+            "buildRoot": "${projectDir}/build/${name}",
+            "installRoot": "${projectDir}/build/install/${name}",
+            "buildCommandArgs": "-v",
+            "cmakeToolchain": "${env.VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake",
+            "variables": [
+                {
+                    "name": "CMAKE_VS_PLATFORM_NAME",
+                    "value": "x64",
+                    "type": "STRING"
+                }
+            ]
+        },
+        {
+            "name": "x64-mingw64-release",
+            "generator": "Ninja",
+            "configurationType": "Release",
+            "buildRoot": "${projectDir}/build/${name}",
+            "installRoot": "${projectDir}/install/${name}",
+            "buildCommandArgs": "-v",
+            "inheritEnvironments": [ "mingw_64" ],
+            "environments": [
+                {
+                    "MINGW64_ROOT": "C:/msys64/mingw64",
+                    "BIN_ROOT": "${env.MINGW64_ROOT}/bin",
+                    "FLAVOR": "x86_64-w64-mingw32",
+                    "TOOLSET_VERSION": "7.3.0",
+                    "PATH": "${env.MINGW64_ROOT}/bin;${env.MINGW64_ROOT}/../usr/local/bin;${env.MINGW64_ROOT}/../usr/bin;${env.MINGW64_ROOT}/../bin;${env.PATH}",
+                    "INCLUDE": "${env.MINGW64_ROOT}/include/c++/${env.TOOLSET_VERSION};${env.MINGW64_ROOT}/include/c++/${env.TOOLSET_VERSION}/tr1;${env.MINGW64_ROOT}/include/c++/${env.TOOLSET_VERSION}/${env.FLAVOR}",
+                    "environment": "mingw_64"
+                }
+            ],
+            "variables": [
+                {
+                    "name": "CMAKE_C_COMPILER",
+                    "value": "${env.BIN_ROOT}/gcc.exe",
+                    "type": "STRING"
+                },
+                {
+                    "name": "CMAKE_CXX_COMPILER",
+                    "value": "${env.BIN_ROOT}/g++.exe",
+                    "type": "STRING"
+                },
+                {
+                    "name": "CMAKE_VS_PLATFORM_NAME",
+                    "value": "x64",
+                    "type": "STRING"
+                }
+            ],
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ]
+}
