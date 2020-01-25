@@ -10,7 +10,6 @@ pipeline {
   environment {
     CI = true
     HOME = "${env.WORKSPACE}"
-    SOURCE_DIR = 'sources'
     BW_OUTPUT_DIR = 'bw-out'
   }
   stages {
@@ -41,7 +40,7 @@ pipeline {
       steps {
 
         withSonarQubeEnv('sonarqube') {
-          sh "sonar-scanner -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.sources=${SOURCE_DIR} -Dsonar.cfamily.build-wrapper-output=${BW_OUTPUT_DIR}"
+          sh "sonar-scanner -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.build-wrapper-output=${BW_OUTPUT_DIR}"
         }
 
         sleep 3
