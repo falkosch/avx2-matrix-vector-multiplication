@@ -18,8 +18,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         -Wall
         -Wextra
         -pedantic
-        #-Wno-ignored-qualifiers
-        #-Wno-unknown-pragmas
     )
 
     add_link_options(
@@ -51,10 +49,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         /permissive-
         /Zc:twoPhase-
         /W4
-        #/wd4514
-        #/wd4710
-        #/wd4711
-        #/wd4820
     )
 
 else()
