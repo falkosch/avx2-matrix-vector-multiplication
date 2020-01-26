@@ -44,11 +44,16 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     )
 
     add_compile_options(
+        /Zi
         /openmp
         /arch:AVX2
         /permissive-
         /Zc:twoPhase-
         /W4
+    )
+
+    add_link_options(
+        /Debug
     )
 
 else()
