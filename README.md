@@ -1,5 +1,8 @@
 # avx2-matrix-vector-multiplication
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=avx2-matrix-vector-multiplication&metric=alert_status)](https://sonarcloud.io/dashboard?id=avx2-matrix-vector-multiplication)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=avx2-matrix-vector-multiplication&metric=coverage)](https://sonarcloud.io/dashboard?id=avx2-matrix-vector-multiplication)
+
 This is a simple learning project about implementing an AVX2 based MxN-matrix-N-vector-multiplication.
 
 # How to build
