@@ -5,66 +5,64 @@
 #include <array>
 #include <vector>
 
-#if defined(__GNUC__)
-#include <x86intrin.h>
-#else
-#include <intrin.h>
-#endif
-
-namespace matrixmultiplication
+namespace matrixmultiplication::avx2
 {
-    namespace avx2
+    class alignas(32) AVXPack : public std::array<float, 8>
     {
-        union alignas(32) AVXPack {
-            __m256 packed;
-            std::array<float, 8> components;
+    };
 
-            explicit AVXPack(const __m256 & packed);
-        };
+    class AVXVector
+    {
+        std::size_t _elements;
+        std::vector<AVXPack> _packs;
 
-        struct AVXVector
-        {
-            std::size_t elements;
-            std::vector<AVXPack> packs;
+      public:
+        static constexpr float INITIAL_VALUE =
+            matrixmultiplication::scalar::ScalarMatrix::INITIAL_VALUE;
 
-            explicit AVXVector(
-                const std::size_t elements,
-                const float initialValue =
-                    matrixmultiplication::scalar::ScalarMatrix::INITIAL_VALUE);
+        typedef std::vector<AVXPack>::const_iterator const_iterator;
+        typedef std::vector<AVXPack>::iterator iterator;
 
-            float & at(const std::size_t i);
+        explicit AVXVector(const std::size_t elements,
+                           const float initialValue = INITIAL_VALUE) noexcept;
 
-            float at(const std::size_t i) const;
-        };
+        std::vector<AVXPack> & packs() noexcept;
+        const std::vector<AVXPack> & packs() const noexcept;
 
-        struct SOAMatrix
-        {
-            std::size_t rows;
-            std::size_t columns;
+        std::size_t size() const noexcept;
 
-            // count of how many AVXPacks make up a full column
-            std::size_t rowsPaddedSize;
+        float & at(const std::size_t i) noexcept;
+        float at(const std::size_t i) const noexcept;
+    };
 
-            std::vector<AVXPack> packs;
+    class SOAMatrix
+    {
+        std::size_t _rows;
+        std::size_t _columns;
 
-            explicit SOAMatrix(
-                const matrixmultiplication::scalar::ScalarMatrix & original);
+        // count of how many AVXPacks make up a full column
+        std::size_t _rowsPaddedSize;
 
-            float & at(const std::size_t r, const std::size_t c);
+        std::vector<AVXPack> _packs;
 
-            float at(const std::size_t r, const std::size_t c) const;
+      public:
+        typedef std::vector<AVXPack>::const_iterator const_iterator;
 
-            // implements the scalar version of the matrix-vector multiplication
-            // as template code
-            const AVXVector avxTransform(const AVXVector & inputVector) const;
+        explicit SOAMatrix(const matrixmultiplication::scalar::ScalarMatrix &
+                               original) noexcept;
 
-            // implements the scalar version of the matrix-vector multiplication
-            // as template code
-            const AVXVector scalarTransform(
-                const AVXVector & inputVector) const;
+        std::vector<AVXPack> & packs() noexcept;
+        const std::vector<AVXPack> & packs() const noexcept;
 
-            // performs a RxC * Cx1->Rx1 matrix-vector multiplication
-            const AVXVector transform(const AVXVector & inputVector) const;
-        };
-    }
+        std::size_t rows() const noexcept;
+        std::size_t columns() const noexcept;
+
+        float & at(const std::size_t r, const std::size_t c) noexcept;
+        float at(const std::size_t r, const std::size_t c) const noexcept;
+    };
+
+    // performs a RxC * Cx1 -> Rx1 matrix-vector multiplication
+    AVXVector transform(const SOAMatrix & matrix,
+                        const AVXVector & inputVector) noexcept;
+
 }

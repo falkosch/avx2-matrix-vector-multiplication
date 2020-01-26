@@ -2,27 +2,31 @@
 
 #include <vector>
 
-namespace matrixmultiplication
+namespace matrixmultiplication::scalar
 {
-    namespace scalar
+    // AOS representation of a matrix
+    class ScalarMatrix
     {
-        // AOS representation of a matrix
-        struct ScalarMatrix
-        {
-            static constexpr float INITIAL_VALUE = 1.0f;
+        std::size_t _rows;
+        std::size_t _columns;
 
-            std::size_t rows;
-            std::size_t columns;
+        std::vector<float> _components;
 
-            std::vector<float> components;
+      public:
+        static constexpr float INITIAL_VALUE = 1.0F;
 
-            explicit ScalarMatrix(const std::size_t rows,
-                                  const std::size_t columns,
-                                  const float initialValue = INITIAL_VALUE);
+        explicit ScalarMatrix(
+            const std::size_t rows, const std::size_t columns,
+            const float initialValue = INITIAL_VALUE) noexcept;
 
-            float & at(const std::size_t r, const std::size_t c);
+        std::size_t rows() const noexcept;
+        std::size_t columns() const noexcept;
 
-            float at(const std::size_t r, const std::size_t c) const;
-        };
-    }
+        float & at(const std::size_t r, const std::size_t c) noexcept;
+        float at(const std::size_t r, const std::size_t c) const noexcept;
+    };
+
+    std::vector<float> transform(
+        const ScalarMatrix & matrix,
+        const std::vector<float> & inputVector) noexcept;
 }
