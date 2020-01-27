@@ -30,9 +30,10 @@ namespace matrixmultiplication::avx2
         return (size - size_t{1}) / NUM_FLOATS_PER_AVX_REGISTER + size_t{1};
     }
 
-    template <int i> auto broadcast(const __m256 & value) noexcept
+    auto broadcast(const __m256 & value, const int component) noexcept
     {
-        return _mm256_permute_ps(value, _MM_SHUFFLE(i, i, i, i));
+        const auto componentMask = _mm256_set1_epi32(component);
+        return _mm256_permutevar8x32_ps(value, componentMask);
     }
 
     auto unpackLow(const __m256 & packed) noexcept
@@ -89,7 +90,7 @@ namespace matrixmultiplication::avx2
 
     float AVXVector::at(const size_t i) const noexcept
     {
-        auto pack = this->_packs.at(i / NUM_FLOATS_PER_AVX_REGISTER);
+        const auto pack = this->_packs.at(i / NUM_FLOATS_PER_AVX_REGISTER);
         return pack.at(i % NUM_FLOATS_PER_AVX_REGISTER);
     }
 
@@ -144,15 +145,17 @@ namespace matrixmultiplication::avx2
 
     float & SOAMatrix::at(const size_t r, const size_t c) noexcept
     {
-        auto i = r / NUM_FLOATS_PER_AVX_REGISTER + c * this->_rowsPaddedSize;
+        const auto i =
+            r / NUM_FLOATS_PER_AVX_REGISTER + c * this->_rowsPaddedSize;
         auto & pack = this->_packs.at(i);
         return pack.at(r % NUM_FLOATS_PER_AVX_REGISTER);
     }
 
     float SOAMatrix::at(const size_t r, const size_t c) const noexcept
     {
-        auto i = r / NUM_FLOATS_PER_AVX_REGISTER + c * this->_rowsPaddedSize;
-        auto pack = this->_packs.at(i);
+        const auto i =
+            r / NUM_FLOATS_PER_AVX_REGISTER + c * this->_rowsPaddedSize;
+        const auto pack = this->_packs.at(i);
         return pack.at(r % NUM_FLOATS_PER_AVX_REGISTER);
     }
 
@@ -162,112 +165,102 @@ namespace matrixmultiplication::avx2
     // AVXVector &) to split some code.
     struct TransformHelper
     {
+        size_t rows;
         size_t packsPerColumn;
         vector<AVXPack>::const_iterator dataStart;
-        vector<AVXPack>::iterator resultStart;
-        vector<AVXPack>::iterator resultEnd;
 
-        TransformHelper(const size_t rows,
-                        const vector<AVXPack>::const_iterator dataStart,
-                        const vector<AVXPack>::iterator resultStart) noexcept
-            : packsPerColumn(padSize(rows)), dataStart(dataStart),
-              resultStart(resultStart),
-              resultEnd(resultStart + static_cast<int64_t>(padSize(rows)))
+        TransformHelper(
+            const size_t rows,
+            const vector<AVXPack>::const_iterator dataStart) noexcept
+            : rows(rows), packsPerColumn(padSize(rows)), dataStart(dataStart)
         {
             assert(rows > 0);
         }
 
-        void operator()(const size_t column,
-                        const __m256 & inputBroadcast) const noexcept
+        AVXVector operator()(const size_t column,
+                             const __m256 & inputBroadcast) const noexcept
         {
             // Thanks to the SOA layout, each row in SOAMatrix contains AVX
             // fitting partial vectors of the elements of the corresponding
             // column "c" in the AOS matrix, so that we can directly load
             // the data into fitting AVX registers, multiply the elements
             // and add the result back into our intermediate result vector.
+            AVXVector resultVector{rows, 0.0F};
             auto rowIt = this->dataStart +
                          static_cast<int64_t>(column * this->packsPerColumn);
-            for (auto resultIt = this->resultStart; resultIt != this->resultEnd;
-                 resultIt++, rowIt++)
+            for (auto && resultPack : resultVector.packs())
             {
-                auto partialColumn = _mm256_load_ps(rowIt->data());
-                auto partialResult = _mm256_load_ps(resultIt->data());
-                auto intermediate =
-                    multiplyAdd(partialColumn, inputBroadcast, partialResult);
-                _mm256_store_ps(resultIt->data(), intermediate);
+                _mm256_store_ps(resultPack.data(),
+                                _mm256_mul_ps(_mm256_load_ps(rowIt->data()),
+                                              inputBroadcast));
+                rowIt++;
             }
+
+            return resultVector;
         }
     };
+
+    void mergeIntermediateIntoResult(const AVXVector & intermediateVector,
+                                     AVXVector & resultVector) noexcept
+    {
+        auto intermediateIt = intermediateVector.packs().cbegin();
+        for (auto && resultPack : resultVector.packs())
+        {
+            auto resultData = resultPack.data();
+            _mm256_store_ps(
+                resultData,
+                _mm256_add_ps(_mm256_load_ps(resultData),
+                              _mm256_load_ps(intermediateIt->data())));
+            ++intermediateIt;
+        }
+    }
 
     AVXVector transform(const SOAMatrix & matrix,
                         const AVXVector & inputVector) noexcept
     {
         assert(inputVector.size() == matrix.columns());
 
-        // HERE is the MOST IMPORTANT code in this example.
-
         const auto rows = matrix.rows();
         const auto columns = matrix.columns();
 
-        AVXVector result{rows, 0.0F};
+        TransformHelper transformHelper{rows, matrix.packs().cbegin()};
+        AVXVector resultVector{rows, 0.0F};
 
-        TransformHelper transformHelper{rows, matrix.packs().cbegin(),
-                                        result.packs().begin()};
-
-        // remember that we have the SOA layout, so we iterate on the
+        // Remember that we have the SOA layout, so we iterate on the
         // columns in the outer most loop. in the inner loop, we vertically
         // do the partial dot product step by step.
         size_t c{0};
         for (auto && inputPack : inputVector.packs())
         {
-            // thanks to the padding we can safely load partials of the data
-            // into one whole AVX register at once
-            auto partialInput = _mm256_load_ps(inputPack.data());
+            // Thanks to the padding we can safely load partials of the data
+            // into one whole AVX register at once.
+            const auto partialInput = _mm256_load_ps(inputPack.data());
 
-            // we unroll the NUM_FLOATS_PER_AVX_REGISTER-times loop on the
-            // partial input vector and broadcast each element for one
-            // iteration in that loop
+            // We loop NUM_FLOATS_PER_AVX_REGISTER-times on the partial input
+            // vector and broadcast each element for each iteration.
 
-            auto partialInputLow = unpackLow(partialInput);
-            auto partialInputHigh = unpackHigh(partialInput);
+            // And we use openmp for each iteration in that loop when the
+#pragma omp parallel
+            {
+                AVXVector intermediateVector{rows, 0.0F};
 
-            if ((c + 0) < columns)
-            {
-                transformHelper(c + 0, broadcast<0>(partialInputLow));
-            }
-            if ((c + 1) < columns)
-            {
-                transformHelper(c + 1, broadcast<1>(partialInputLow));
-            }
-            if ((c + 2) < columns)
-            {
-                transformHelper(c + 2, broadcast<2>(partialInputLow));
-            }
-            if ((c + 3) < columns)
-            {
-                transformHelper(c + 3, broadcast<3>(partialInputLow));
-            }
+#pragma omp for nowait
+                for (int i{0}; i < int{8}; ++i)
+                {
+                    const auto inputBroadcast = broadcast(partialInput, i);
+                    intermediateVector = transformHelper(c + i, inputBroadcast);
+                }
 
-            if ((c + 4) < columns)
-            {
-                transformHelper(c + 4, broadcast<0>(partialInputHigh));
-            }
-            if ((c + 5) < columns)
-            {
-                transformHelper(c + 5, broadcast<1>(partialInputHigh));
-            }
-            if ((c + 6) < columns)
-            {
-                transformHelper(c + 6, broadcast<2>(partialInputHigh));
-            }
-            if ((c + 7) < columns)
-            {
-                transformHelper(c + 7, broadcast<3>(partialInputHigh));
+#pragma omp critical
+                {
+                    mergeIntermediateIntoResult(intermediateVector,
+                                                resultVector);
+                }
             }
 
             c += NUM_FLOATS_PER_AVX_REGISTER;
         }
 
-        return result;
+        return resultVector;
     }
 }
