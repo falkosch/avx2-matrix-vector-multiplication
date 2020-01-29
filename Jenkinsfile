@@ -26,6 +26,7 @@ pipeline {
       steps {
         sh "mkdir -p ${BW_OUTPUT_DIR}"
         sh "chmod +x ./*.sh"
+        sh "./install-dependencies-with-local-conan.sh"
         sh "build-wrapper-linux-x86-64 --out-dir ${BW_OUTPUT_DIR} ./build-with-local-cc.sh"
       }
 

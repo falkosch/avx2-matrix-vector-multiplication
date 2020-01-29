@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. __with-local-cc.sh
+. _build-env.sh
 
 cmake -B ${OUTPUT_DIR} \
     -DCMAKE_VS_PLATFORM_NAME:STRING="${ARCH_TYPE}" \

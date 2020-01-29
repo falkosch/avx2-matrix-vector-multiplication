@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.9)
 
+if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "")
+    set(CMAKE_VS_PLATFORM_NAME "x64")
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build/conan/${CMAKE_VS_PLATFORM_NAME}")
 
 project("avx2-matrix-vector-multiplication")
 
