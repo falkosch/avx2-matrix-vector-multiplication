@@ -4,6 +4,8 @@
 
 namespace matrixmultiplication::scalar
 {
+    typedef std::vector<float> ScalarVector;
+
     // AOS representation of a matrix
     class ScalarMatrix
     {
@@ -26,7 +28,6 @@ namespace matrixmultiplication::scalar
         float at(const std::size_t r, const std::size_t c) const noexcept;
     };
 
-    std::vector<float> transform(
-        const ScalarMatrix & matrix,
-        const std::vector<float> & inputVector) noexcept;
+    ScalarVector transform(const ScalarMatrix & matrix,
+                           const ScalarVector & inputVector) noexcept;
 }

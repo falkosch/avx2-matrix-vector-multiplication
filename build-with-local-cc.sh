@@ -8,5 +8,5 @@ cmake -B ${OUTPUT_DIR} \
 
 cmake --build ${OUTPUT_DIR} \
     --clean-first \
-    --target avx2-variant-client \
+    --target sources tests \
     --config ${BUILD_TYPE}
