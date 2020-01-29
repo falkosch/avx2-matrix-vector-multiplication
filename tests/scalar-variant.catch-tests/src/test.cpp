@@ -1,5 +1,7 @@
 #include "test_commons.h"
 
+using Catch::Matchers::Equals;
+
 namespace matrixmultiplication::scalar
 {
     SCENARIO("scalar matrix multiplication")
@@ -24,6 +26,11 @@ namespace matrixmultiplication::scalar
                 THEN("it results in a 2D scalar vector again")
                 {
                     REQUIRE(result.size() == 2);
+                }
+
+                THEN("the resulting vector is equal to the sample vector")
+                {
+                    REQUIRE_THAT(result, Equals(sampleVector));
                 }
             }
         }
