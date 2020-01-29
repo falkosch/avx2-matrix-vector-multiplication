@@ -8,5 +8,5 @@ cmake -B ${OUTPUT_DIR} \
 
 cmake --build ${OUTPUT_DIR} \
     --clean-first \
-    --target sources tests \
+    --target sources_and_tests \
     --config ${BUILD_TYPE}

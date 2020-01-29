@@ -68,3 +68,9 @@ endif()
 
 add_subdirectory(sources)
 add_subdirectory(tests)
+
+add_custom_target(sources_and_tests
+    DEPENDS
+        sources
+        tests
+)
