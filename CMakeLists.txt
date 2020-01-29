@@ -18,6 +18,7 @@ add_compile_definitions(
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(
+        -g3
         -march=native
         -fopenmp
         -Wall
@@ -26,6 +27,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     )
 
     add_link_options(
+        -g3
         -fopenmp
     )
 

@@ -58,7 +58,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             >
             $<$<CONFIG:Debug>:
                 -Og
-                -g2
             >
     )
 
@@ -68,6 +67,9 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
                 -O3
                 -flto
                 -fwhole-program
+            >
+            $<$<CONFIG:Debug>:
+                -Og
             >
     )
 
