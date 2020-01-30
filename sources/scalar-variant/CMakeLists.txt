@@ -10,15 +10,19 @@ add_library(${PROJECT_NAME}
         "src/scalar-variant.cpp"
 )
 
+add_dependencies(${PROJECT_NAME}
+    sources-build-aggregate
+)
+
+target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+        sources-build-aggregate
+)
+
 source_group(
     TREE ${CMAKE_CURRENT_SOURCE_DIR}
     PREFIX "Files"
     REGULAR_EXPRESSION ".+\\.(h|cpp)"
-)
-
-target_compile_features(${PROJECT_NAME}
-    PUBLIC
-        cxx_std_17
 )
 
 set_target_properties(${PROJECT_NAME}
@@ -32,55 +36,13 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_compile_definitions(${PROJECT_NAME}
-    PUBLIC
-        $<$<STREQUAL:${CMAKE_VS_PLATFORM_NAME},x64>:
-            X64
-        >
-        $<$<STREQUAL:${CMAKE_VS_PLATFORM_NAME},x86>:
-            X86
-        >
-        $<$<CONFIG:Release>:
-            NDEBUG
-        >
-        $<$<CONFIG:Debug>:
-            _DEBUG
-            DEBUG
-        >
     PRIVATE
         _LIB
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${PROJECT_NAME}
-        PUBLIC
-            $<$<CONFIG:Release>:
-                -O3
-            >
-            $<$<CONFIG:Debug>:
-                -Og
-            >
-    )
-
-    target_link_options(${PROJECT_NAME}
-        PUBLIC
-            $<$<CONFIG:Release>:
-                -O3
-                -flto
-                -fwhole-program
-            >
-            $<$<CONFIG:Debug>:
-                -Og
-            >
-    )
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_link_options(${PROJECT_NAME}
-        PUBLIC
-            $<$<CONFIG:Release>:
-                /OPT:REF
-                /OPT:ICF
-            >
-    )
 
 else()
     message(FATAL_ERROR "no configuration for compiler ${CMAKE_CXX_COMPILER_ID}")
