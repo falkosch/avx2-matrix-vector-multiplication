@@ -30,24 +30,24 @@ namespace matrixmultiplication::avx2
         return (size - size_t{1}) / NUM_FLOATS_PER_AVX_REGISTER + size_t{1};
     }
 
-    template <int i> auto broadcast(const __m256 & value) noexcept
+    template <int i> const auto broadcast(const __m256 & value) noexcept
     {
         return _mm256_permute_ps(value, _MM_SHUFFLE(i, i, i, i));
     }
 
-    auto unpackLow(const __m256 & packed) noexcept
+    const auto unpackLow(const __m256 & packed) noexcept
     {
         return _mm256_permute2f128_ps(packed, packed, 0);
     }
 
-    auto unpackHigh(const __m256 & packed) noexcept
+    const auto unpackHigh(const __m256 & packed) noexcept
     {
         return _mm256_permute2f128_ps(packed, packed, 0b00010001);
     }
 
-    auto multiplyAdd(const __m256 & partialColumn,
-                     const __m256 & inputBroadcast,
-                     const __m256 & partialResult) noexcept
+    const auto multiplyAdd(const __m256 & partialColumn,
+                           const __m256 & inputBroadcast,
+                           const __m256 & partialResult) noexcept
     {
         // will be optimized to a real hardware FMA op if available
         return _mm256_add_ps(_mm256_mul_ps(partialColumn, inputBroadcast),
@@ -160,19 +160,18 @@ namespace matrixmultiplication::avx2
     // vector element-wise with the column vector of a matrix (that is the
     // row in the SOAMatrix). helps the SOAMatrix.avxTransform(const
     // AVXVector &) to split some code.
-    struct TransformHelper
+    class TransformHelper
     {
         size_t packsPerColumn;
-        vector<AVXPack>::const_iterator dataStart;
-        vector<AVXPack>::iterator resultStart;
-        vector<AVXPack>::iterator resultEnd;
+        vector<AVXPack>::const_iterator _dataStart;
+        AVXVector & _resultVector;
 
+      public:
         TransformHelper(const size_t rows,
                         const vector<AVXPack>::const_iterator dataStart,
-                        const vector<AVXPack>::iterator resultStart) noexcept
-            : packsPerColumn(padSize(rows)), dataStart(dataStart),
-              resultStart(resultStart),
-              resultEnd(resultStart + static_cast<int64_t>(padSize(rows)))
+                        AVXVector & resultVector) noexcept
+            : packsPerColumn(padSize(rows)), _dataStart(dataStart),
+              _resultVector(resultVector)
         {
             assert(rows > 0);
         }
@@ -185,16 +184,17 @@ namespace matrixmultiplication::avx2
             // column "c" in the AOS matrix, so that we can directly load
             // the data into fitting AVX registers, multiply the elements
             // and add the result back into our intermediate result vector.
-            auto rowIt = this->dataStart +
+            auto rowIt = this->_dataStart +
                          static_cast<int64_t>(column * this->packsPerColumn);
-            for (auto resultIt = this->resultStart; resultIt != this->resultEnd;
-                 resultIt++, rowIt++)
+            for (auto && resultPack : _resultVector.packs())
             {
                 auto partialColumn = _mm256_load_ps(rowIt->data());
-                auto partialResult = _mm256_load_ps(resultIt->data());
+                auto partialResult = _mm256_load_ps(resultPack.data());
                 auto intermediate =
                     multiplyAdd(partialColumn, inputBroadcast, partialResult);
-                _mm256_store_ps(resultIt->data(), intermediate);
+                _mm256_store_ps(resultPack.data(), intermediate);
+
+                ++rowIt;
             }
         }
     };
@@ -211,8 +211,7 @@ namespace matrixmultiplication::avx2
 
         AVXVector result{rows, 0.0F};
 
-        TransformHelper transformHelper{rows, matrix.packs().cbegin(),
-                                        result.packs().begin()};
+        TransformHelper transformHelper{rows, matrix.packs().cbegin(), result};
 
         // remember that we have the SOA layout, so we iterate on the
         // columns in the outer most loop. in the inner loop, we vertically
