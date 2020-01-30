@@ -8,10 +8,14 @@ if [ "${ARCH_TYPE}" = "x64" ]; then
 fi
 
 # Try having conan available in cygwin although conan is already installed for the parent Windows system
-command -v python3 &>/dev/null || { echo "Please make sure 'python3' is available."; exit 1; }
-python3 -m pip install conan &>/dev/null
+PYTHON=$(command -v python || command -v python3)
+[ -f ${PYTHON} ] || { echo "Please make sure 'python3' is available."; exit 1; }
+${PYTHON} -m pip install conan &>/dev/null
 
 command -v conan &>/dev/null || { echo "Please make sure 'conan' is available."; exit 1; }
+
+rm -rf build/conan/${ARCH_TYPE}
+
 conan install . \
     --install-folder "build/conan/${ARCH_TYPE}" \
     --build missing \
