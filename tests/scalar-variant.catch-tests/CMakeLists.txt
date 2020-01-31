@@ -38,7 +38,7 @@ target_include_directories(${PROJECT_NAME}
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(COVERAGE)
-        setup_target_for_coverage_lcov(
+        setup_target_for_coverage_gcovr_html(
             NAME "${PROJECT_NAME}-coverage"
             EXECUTABLE ${PROJECT_NAME}
             DEPENDENCIES ${PROJECT_NAME}
