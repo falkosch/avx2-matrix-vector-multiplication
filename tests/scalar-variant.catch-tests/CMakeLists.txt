@@ -37,6 +37,13 @@ target_include_directories(${PROJECT_NAME}
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(COVERAGE)
+        setup_target_for_coverage_lcov(
+            NAME "${PROJECT_NAME}-coverage"
+            EXECUTABLE ${PROJECT_NAME}
+            DEPENDENCIES ${PROJECT_NAME}
+        )
+    endif()
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 

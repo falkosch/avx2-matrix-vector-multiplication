@@ -50,7 +50,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(${PROJECT_NAME}
         PUBLIC
             $<$<CONFIG:Release>:
-                -O3
+                $<$<BOOL:COVERAGE>:
+                    -O3
+                >
+                $<$<NOT:$<BOOL:COVERAGE>>:
+                    -O1
+                >
             >
             $<$<CONFIG:Debug>:
                 -Og
@@ -60,9 +65,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_link_options(${PROJECT_NAME}
         PUBLIC
             $<$<CONFIG:Release>:
-                -O3
-                -flto
-                -fwhole-program
+                $<$<BOOL:COVERAGE>:
+                    -O3
+                >
+                $<$<NOT:$<BOOL:COVERAGE>>:
+                    -O1
+                >
             >
             $<$<CONFIG:Debug>:
                 -Og

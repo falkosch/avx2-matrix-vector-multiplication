@@ -17,6 +17,11 @@ add_compile_definitions(
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(COVERAGE)
+        include(CodeCoverage)
+        append_coverage_compiler_flags()
+    endif()
+
     add_compile_options(
         -g3
         -march=native
@@ -121,4 +126,9 @@ add_custom_target(sources_and_tests
     DEPENDS
         sources
         tests
+)
+
+add_custom_target(coverage
+    DEPENDS
+        "scalar-variant.catch-tests-coverage"
 )
