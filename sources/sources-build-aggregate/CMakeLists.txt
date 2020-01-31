@@ -51,10 +51,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         PUBLIC
             $<$<CONFIG:Release>:
                 $<$<BOOL:COVERAGE>:
-                    -O3
+                    -O1
                 >
                 $<$<NOT:$<BOOL:COVERAGE>>:
-                    -O1
+                    -O3
                 >
             >
             $<$<CONFIG:Debug>:
@@ -66,10 +66,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         PUBLIC
             $<$<CONFIG:Release>:
                 $<$<BOOL:COVERAGE>:
-                    -O3
+                    -O1
                 >
                 $<$<NOT:$<BOOL:COVERAGE>>:
-                    -O1
+                    -O3
                 >
             >
             $<$<CONFIG:Debug>:
