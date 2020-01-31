@@ -8,6 +8,8 @@ add_executable(${PROJECT_NAME}
     "src/test.cpp"
 )
 
+add_custom_target("${PROJECT_NAME}-coverage" DEPENDS ${PROJECT_NAME})
+
 source_group(
     TREE ${CMAKE_CURRENT_SOURCE_DIR}
     PREFIX "Files"
@@ -39,10 +41,22 @@ target_include_directories(${PROJECT_NAME}
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(COVERAGE)
         setup_target_for_coverage_gcovr_html(
-            NAME "${PROJECT_NAME}-coverage"
+            NAME "${PROJECT_NAME}-coverage.html"
             BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
             EXECUTABLE ${PROJECT_NAME}
             DEPENDENCIES ${PROJECT_NAME}
+        )
+
+        setup_target_for_coverage_gcovr_xml(
+            NAME "${PROJECT_NAME}-coverage.xml"
+            BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+            EXECUTABLE ${PROJECT_NAME}
+            DEPENDENCIES ${PROJECT_NAME}
+        )
+
+        add_dependencies("${PROJECT_NAME}-coverage"
+            "${PROJECT_NAME}-coverage.html"
+            "${PROJECT_NAME}-coverage.xml"
         )
     endif()
 

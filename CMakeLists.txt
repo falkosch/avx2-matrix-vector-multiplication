@@ -127,8 +127,3 @@ add_custom_target(sources_and_tests
         sources
         tests
 )
-
-add_custom_target(coverage
-    DEPENDS
-        "scalar-variant.catch-tests-coverage"
-)
