@@ -40,6 +40,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(COVERAGE)
         setup_target_for_coverage_gcovr_html(
             NAME "${PROJECT_NAME}-coverage"
+            BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
             EXECUTABLE ${PROJECT_NAME}
             DEPENDENCIES ${PROJECT_NAME}
         )
