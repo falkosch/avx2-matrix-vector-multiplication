@@ -3,6 +3,7 @@ pipeline {
 
   options {
     skipStagesAfterUnstable()
+    skipDefaultCheckout()
     timeout(time: 1, unit: 'HOURS')
   }
 
@@ -27,6 +28,28 @@ pipeline {
       }
 
       stages {
+        stage('scm stage') {
+          steps {
+            checkout([
+              $class: 'GitSCM',
+              branches: scm.branches,
+              doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+              extensions: [
+                [
+                  $class: 'SubmoduleOption',
+                  disableSubmodules: false,
+                  parentCredentials: true,
+                  recursiveSubmodules: true,
+                  reference: '',
+                  trackingSubmodules: false
+                ]
+              ],
+              submoduleCfg: scm.submoduleCfg,
+              userRemoteConfigs: scm.userRemoteConfigs
+            ])
+          }
+        }
+
         stage("prepare") {
           steps {
             sh "chmod +x ./*.sh"
