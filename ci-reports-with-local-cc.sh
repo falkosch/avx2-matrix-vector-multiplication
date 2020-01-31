@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-TARGET="coverage"
-COVERAGE="1"
+COVERAGE=1
+TARGET="ci"
 . ./build-with-local-cc.sh

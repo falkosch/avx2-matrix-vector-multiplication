@@ -2,4 +2,4 @@
 
 . ./build-with-local-cc.sh
 
-find "$(pwd)/${OUTPUT_DIR}/tests" -executable -type f -print -exec {} \;
+find "$(pwd)/${OUTPUT_DIR}/tests" -executable -type f -print -exec {} -d yes \;

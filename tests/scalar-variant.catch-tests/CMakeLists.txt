@@ -8,7 +8,20 @@ add_executable(${PROJECT_NAME}
     "src/test.cpp"
 )
 
-add_custom_target("${PROJECT_NAME}-coverage" DEPENDS ${PROJECT_NAME})
+set(JUNIT_TARGET "${PROJECT_NAME}-junit")
+add_custom_target(${JUNIT_TARGET}
+    COMMAND
+        ${PROJECT_NAME} -d yes -r junit -o "${JUNIT_TARGET}.xml"
+    BYPRODUCTS
+        "${JUNIT_TARGET}.xml"
+    DEPENDS
+        ${PROJECT_NAME}
+)
+
+add_custom_target("${PROJECT_NAME}-reports"
+    DEPENDS
+        ${JUNIT_TARGET}
+)
 
 source_group(
     TREE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -40,23 +53,15 @@ target_include_directories(${PROJECT_NAME}
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(COVERAGE)
-        setup_target_for_coverage_gcovr_html(
-            NAME "${PROJECT_NAME}-coverage.html"
-            BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
-            EXECUTABLE ${PROJECT_NAME}
-            DEPENDENCIES ${PROJECT_NAME}
-        )
-
         setup_target_for_coverage_gcovr_xml(
-            NAME "${PROJECT_NAME}-coverage.xml"
+            NAME "${PROJECT_NAME}-cobertura"
             BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
-            EXECUTABLE ${PROJECT_NAME}
+            EXECUTABLE ${PROJECT_NAME} -r compact
             DEPENDENCIES ${PROJECT_NAME}
         )
 
-        add_dependencies("${PROJECT_NAME}-coverage"
-            "${PROJECT_NAME}-coverage.html"
-            "${PROJECT_NAME}-coverage.xml"
+        add_dependencies("${PROJECT_NAME}-reports"
+            "${PROJECT_NAME}-cobertura"
         )
     endif()
 

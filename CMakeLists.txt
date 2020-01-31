@@ -127,3 +127,8 @@ add_custom_target(sources_and_tests
         sources
         tests
 )
+
+add_custom_target(ci
+    DEPENDS
+        reports
+)

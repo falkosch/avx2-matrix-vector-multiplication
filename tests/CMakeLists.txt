@@ -8,7 +8,7 @@ add_custom_target(tests
         scalar-variant.catch-tests
 )
 
-add_custom_target(coverage
+add_custom_target(reports
     DEPENDS
-        scalar-variant.catch-tests-coverage
+        scalar-variant.catch-tests-reports
 )
