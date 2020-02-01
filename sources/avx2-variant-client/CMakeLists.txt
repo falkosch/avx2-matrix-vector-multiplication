@@ -15,11 +15,6 @@ source_group(
     REGULAR_EXPRESSION ".+\\.(h|cpp)"
 )
 
-set_target_properties(${PROJECT_NAME}
-    PROPERTIES
-        INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-)
-
 add_dependencies(${PROJECT_NAME}
     scalar-variant
     avx2-variant
@@ -47,6 +42,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     )
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set_target_properties(${PROJECT_NAME}
+        PROPERTIES
+            INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
+    )
+
     target_link_options(${PROJECT_NAME}
         PRIVATE
             /SUBSYSTEM:CONSOLE

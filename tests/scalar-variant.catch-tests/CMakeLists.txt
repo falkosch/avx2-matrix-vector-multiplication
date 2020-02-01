@@ -29,11 +29,6 @@ source_group(
     REGULAR_EXPRESSION ".+\\.(h|cpp)"
 )
 
-set_target_properties(${PROJECT_NAME}
-    PROPERTIES
-        INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-)
-
 add_dependencies(${PROJECT_NAME}
     "scalar-variant"
 )
@@ -54,10 +49,16 @@ target_include_directories(${PROJECT_NAME}
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(COVERAGE)
         setup_target_for_coverage_gcovr_xml(
-            NAME "${PROJECT_NAME}-cobertura"
-            BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
-            EXECUTABLE ${PROJECT_NAME} -r compact
-            DEPENDENCIES ${PROJECT_NAME}
+            NAME
+                "${PROJECT_NAME}-cobertura"
+            BASE_DIRECTORY
+                "${CMAKE_SOURCE_DIR}"
+            EXECUTABLE
+                ${PROJECT_NAME}
+            EXECUTABLE_ARGS
+                -r compact
+            DEPENDENCIES
+                ${PROJECT_NAME}
         )
 
         add_dependencies("${PROJECT_NAME}-reports"
@@ -66,6 +67,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     endif()
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set_target_properties(${PROJECT_NAME}
+        PROPERTIES
+            INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
+    )
 
 else()
     message(FATAL_ERROR "no configuration for compiler ${CMAKE_CXX_COMPILER_ID}")

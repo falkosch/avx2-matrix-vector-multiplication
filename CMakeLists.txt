@@ -7,6 +7,15 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build/conan/${CMAKE_VS_PLATFORM_NAME}")
 
+set(CompilerFlags
+    CMAKE_CXX_FLAGS
+    CMAKE_CXX_FLAGS_DEBUG
+    CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_C_FLAGS
+    CMAKE_C_FLAGS_DEBUG
+    CMAKE_C_FLAGS_RELEASE
+)
+
 project("avx2-matrix-vector-multiplication")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -21,6 +30,11 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         include(CodeCoverage)
         append_coverage_compiler_flags()
     endif()
+
+    foreach(CompilerFlag ${CompilerFlags})
+        string(REGEX REPLACE "-g[0-9]?" "" ${CompilerFlag} "${${CompilerFlag}}")
+        string(REGEX REPLACE "-O[0-9]?" "" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
 
     add_compile_options(
         -g3
@@ -83,14 +97,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     )
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(CompilerFlags
-        CMAKE_CXX_FLAGS
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_C_FLAGS
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_RELEASE
-    )
     foreach(CompilerFlag ${CompilerFlags})
         string(REGEX REPLACE "/[wW][0-9]" "" ${CompilerFlag} "${${CompilerFlag}}")
         string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")

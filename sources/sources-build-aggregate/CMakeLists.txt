@@ -24,11 +24,6 @@ target_compile_features(${PROJECT_NAME}
         cxx_std_17
 )
 
-set_target_properties(${PROJECT_NAME}
-    PROPERTIES
-        INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-)
-
 target_compile_definitions(${PROJECT_NAME}
     PUBLIC
         $<$<STREQUAL:${CMAKE_VS_PLATFORM_NAME},x64>:
@@ -50,18 +45,18 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(${PROJECT_NAME}
         PUBLIC
             $<$<CONFIG:Release>:
-                $<$<BOOL:COVERAGE>:
+                $<$<BOOL:${COVERAGE}>:
                     -O0
                 >
-                $<$<NOT:$<BOOL:COVERAGE>>:
+                $<$<NOT:$<BOOL:${COVERAGE}>>:
                     -O3
                 >
             >
             $<$<CONFIG:Debug>:
-                $<$<BOOL:COVERAGE>:
+                $<$<BOOL:${COVERAGE}>:
                     -O0
                 >
-                $<$<NOT:$<BOOL:COVERAGE>>:
+                $<$<NOT:$<BOOL:${COVERAGE}>>:
                     -Og
                 >
             >
@@ -70,24 +65,31 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_link_options(${PROJECT_NAME}
         PUBLIC
             $<$<CONFIG:Release>:
-                $<$<BOOL:COVERAGE>:
+                $<$<BOOL:${COVERAGE}>:
                     -O0
                 >
-                $<$<NOT:$<BOOL:COVERAGE>>:
+                $<$<NOT:$<BOOL:${COVERAGE}>>:
                     -O3
+                    -flto
+                    -fwhole-program
                 >
             >
             $<$<CONFIG:Debug>:
-                $<$<BOOL:COVERAGE>:
+                $<$<BOOL:${COVERAGE}>:
                     -O0
                 >
-                $<$<NOT:$<BOOL:COVERAGE>>:
+                $<$<NOT:$<BOOL:${COVERAGE}>>:
                     -Og
                 >
             >
     )
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set_target_properties(${PROJECT_NAME}
+        PROPERTIES
+            INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
+    )
+
     target_link_options(${PROJECT_NAME}
         PUBLIC
             $<$<CONFIG:Release>:

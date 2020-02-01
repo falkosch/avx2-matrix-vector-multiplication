@@ -10,5 +10,6 @@ add_custom_target(tests
 
 add_custom_target(reports
     DEPENDS
-        scalar-variant.catch-tests-reports
+        "scalar-variant.catch-tests-reports"
 )
+
