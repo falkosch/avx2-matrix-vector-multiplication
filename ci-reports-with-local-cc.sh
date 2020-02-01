@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
-COVERAGE=1
 TARGET="ci"
+OUTPUT_DIR="build/coverage"
+
+CONFIGURE_ADD_ARGS=-DCOVERAGE="1"
+BUILD_ADD_ARGS="--clean-first"
+
 . ./build-with-local-cc.sh
