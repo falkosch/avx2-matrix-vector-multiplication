@@ -1,12 +1,11 @@
-project("scalar-variant.catch-tests"
+project("avx2-variant.catch-tests"
     LANGUAGES CXX
     VERSION 1.0.0
 )
 
 add_executable(${PROJECT_NAME}
     "src/catch_main.cpp"
-    "src/creating-scalar-matrices.cpp"
-    "src/scalar-transformation.cpp"
+    "src/creating-avx2-matrices.cpp"
 )
 
 source_group(
@@ -16,12 +15,12 @@ source_group(
 )
 
 add_dependencies(${PROJECT_NAME}
-    "scalar-variant"
+    "avx2-variant"
 )
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        "scalar-variant"
+        "avx2-variant"
 )
 
 target_include_directories(${PROJECT_NAME}

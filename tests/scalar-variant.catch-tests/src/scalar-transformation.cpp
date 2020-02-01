@@ -4,7 +4,7 @@ using Catch::Matchers::Equals;
 
 namespace matrixmultiplication::scalar
 {
-    SCENARIO("scalar matrix multiplication")
+    SCENARIO("scalar transformation")
     {
         GIVEN("a sample 2D scalar vector"
               "and a 2x2 scalar identity matrix")
@@ -18,7 +18,7 @@ namespace matrixmultiplication::scalar
                 return m;
             }();
 
-            WHEN("vector is transformed using the matrix")
+            WHEN("transforming the vector is transformed by the matrix")
             {
                 const ScalarVector result =
                     transform(identityMatrix, sampleVector);
