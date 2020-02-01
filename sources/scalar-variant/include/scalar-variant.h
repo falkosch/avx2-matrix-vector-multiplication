@@ -15,7 +15,7 @@ namespace matrixmultiplication::scalar
         std::vector<float> _components;
 
       public:
-        static constexpr float INITIAL_VALUE = 1.0F;
+        static constexpr float INITIAL_VALUE = 0.0F;
 
         explicit ScalarMatrix(
             const std::size_t rows, const std::size_t columns,
