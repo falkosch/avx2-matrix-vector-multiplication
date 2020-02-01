@@ -2,4 +2,4 @@
 
 . ./build-with-local-cc.sh
 
-find "$(pwd)/${OUTPUT_DIR}/sources/avx2-variant-client" -executable -type f -print -exec {} \;
+(cd $(pwd)/${OUTPUT_DIR}/sources && find . -executable -type f -print -exec {} \;)

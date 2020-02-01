@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 
-project("scalar-variant"
+project("scalar-variant-client"
     LANGUAGES CXX
     VERSION 1.0.0
 )
 
-add_library(${PROJECT_NAME}
-    STATIC
-        "src/scalar-variant.cpp"
+add_executable(${PROJECT_NAME}
+    "src/scalar-variant-client.cpp"
 )
 
 source_group(
@@ -17,30 +16,39 @@ source_group(
 )
 
 add_dependencies(${PROJECT_NAME}
-    sources-build-aggregate
+    scalar-variant
 )
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        sources-build-aggregate
+        scalar-variant
 )
 
 target_include_directories(${PROJECT_NAME}
-    PUBLIC
+    PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
-        _LIB
+        _CONSOLE
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+            stdc++
+    )
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set_target_properties(${PROJECT_NAME}
         PROPERTIES
             INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
+    )
+
+    target_link_options(${PROJECT_NAME}
+        PRIVATE
+            /SUBSYSTEM:CONSOLE
     )
 
 else()
