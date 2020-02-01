@@ -59,7 +59,7 @@ pipeline {
 
         stage("build") {
           steps {
-            sh "rm -rf ${BW_OUTPUT_DIR}"
+            sh "rm -rf ${BW_OUTPUT_DIR} build/ci"
             sh "mkdir -p ${BW_OUTPUT_DIR}"
             sh "build-wrapper-linux-x86-64 --out-dir ${BW_OUTPUT_DIR} ./build-with-local-cc.sh"
           }
@@ -73,10 +73,10 @@ pipeline {
 
         stage("collect reports") {
           steps {
-            junit 'build/**/*-junit.xml'
+            junit 'build/ci/**/*-junit.xml'
 
             cobertura([
-              coberturaReportFile: 'build/**/*-cobertura.xml',
+              coberturaReportFile: 'build/ci/**/*-cobertura.xml',
               conditionalCoverageTargets: '80, 0, 0',
               enableNewApi: true,
               lineCoverageTargets: '80, 0, 0',

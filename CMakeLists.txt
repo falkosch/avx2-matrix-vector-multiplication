@@ -4,9 +4,6 @@ if("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "")
     set(CMAKE_VS_PLATFORM_NAME "x64")
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build/conan/${CMAKE_VS_PLATFORM_NAME}")
-
 set(CompilerFlags
     CMAKE_CXX_FLAGS
     CMAKE_CXX_FLAGS_DEBUG
@@ -16,21 +13,33 @@ set(CompilerFlags
     CMAKE_C_FLAGS_RELEASE
 )
 
-project("avx2-matrix-vector-multiplication")
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+#     execute_process(
+#         COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+#         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+#         RESULT_VARIABLE GIT_SUBMOD_RESULT
+#     )
+#     if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+#         message(FATAL_ERROR "${GIT_SUBMOD_RESULT}: updating submodules failed, please checkout submodules manually")
+#         return()
+#     endif()
+# endif()
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/build/conan/${CMAKE_VS_PLATFORM_NAME}")
+
+project("avx2-matrix-vector-multiplication")
 
 add_compile_definitions(
     UNICODE
     _UNICODE
 )
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(COVERAGE)
-        include(CodeCoverage)
-        append_coverage_compiler_flags()
-    endif()
+include(Catch2Tests)
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     foreach(CompilerFlag ${CompilerFlags})
         string(REGEX REPLACE "-g[0-9]?" "" ${CompilerFlag} "${${CompilerFlag}}")
         string(REGEX REPLACE "-O[0-9]?" "" ${CompilerFlag} "${${CompilerFlag}}")
