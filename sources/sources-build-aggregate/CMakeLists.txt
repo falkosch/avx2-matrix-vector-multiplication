@@ -3,21 +3,13 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 project("sources-build-aggregate" LANGUAGES CXX)
 
 # Generates a dummy compilation source so that add_library doesn't complain
-set(SOURCES_BUILD_AGGREGATE_DUMMY_TARGET "${PROJECT_NAME}-dummy")
 set(SOURCES_BUILD_AGGREGATE_DUMMY_FILE "${CMAKE_CURRENT_BINARY_DIR}/dummy.cxx")
-add_custom_target(${SOURCES_BUILD_AGGREGATE_DUMMY_TARGET}
-    COMMAND
-        echo > ${SOURCES_BUILD_AGGREGATE_DUMMY_FILE}
-    BYPRODUCTS
-        ${SOURCES_BUILD_AGGREGATE_DUMMY_FILE}
-)
+file(GENERATE OUTPUT ${SOURCES_BUILD_AGGREGATE_DUMMY_FILE} CONTENT "")
 
 add_library(${PROJECT_NAME}
     STATIC
         ${SOURCES_BUILD_AGGREGATE_DUMMY_FILE}
 )
-
-add_dependencies(${PROJECT_NAME} ${SOURCES_BUILD_AGGREGATE_DUMMY_TARGET})
 
 target_compile_features(${PROJECT_NAME}
     PUBLIC
