@@ -17,12 +17,12 @@ source_group(
 )
 
 add_dependencies(${PROJECT_NAME}
-    scalar-variant
+    sources-build-aggregate
 )
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        scalar-variant
+        sources-build-aggregate
 )
 
 target_include_directories(${PROJECT_NAME}

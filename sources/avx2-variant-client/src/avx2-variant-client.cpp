@@ -1,13 +1,11 @@
 #include "avx2-variant-client.h"
 
 #include <avx2-variant.h>
-#include <scalar-variant.h>
 
 #include <cstdint>
 #include <iostream>
 
 using namespace std;
-using namespace matrixmultiplication::scalar;
 using namespace matrixmultiplication::avx2;
 
 int main() noexcept
@@ -19,12 +17,10 @@ int main() noexcept
     const size_t inputVectorSize{10000};
     const size_t outputVectorSize{10000};
 
-    const ScalarMatrix aosMatrix{outputVectorSize, inputVectorSize};
-
     // 1: we use a "structure of arrays" memory layout for the transform matrix
     // so that we can compute the transform in SIMD preferred way
-    const SOAMatrix soaMatrix{aosMatrix};
-    const AVXVector inputVector{inputVectorSize};
+    const SOAMatrix soaMatrix{outputVectorSize, inputVectorSize};
+    const AVXVector inputVector(inputVectorSize, 1.0F);
 
     // 2: transform the input vector to the output vector
     const auto outputVector = transform(soaMatrix, inputVector);

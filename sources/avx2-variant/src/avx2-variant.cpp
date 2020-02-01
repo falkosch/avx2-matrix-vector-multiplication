@@ -9,7 +9,6 @@
 #endif
 
 using namespace std;
-using namespace matrixmultiplication::scalar;
 
 namespace matrixmultiplication::avx2
 {
@@ -60,6 +59,11 @@ namespace matrixmultiplication::avx2
     {
         assert(elements > 0);
 
+        for (auto && pack : this->_packs)
+        {
+            _mm256_store_ps(pack.data(), _mm256_set1_ps(PADDING_VALUE));
+        }
+
         for (size_t i{0}; i < this->_elements; ++i)
         {
             this->at(i) = initialValue;
@@ -93,31 +97,25 @@ namespace matrixmultiplication::avx2
         return pack.at(i % NUM_FLOATS_PER_AVX_REGISTER);
     }
 
-    SOAMatrix::SOAMatrix(const ScalarMatrix & original) noexcept
-        : _rows{original.rows()}, _columns{original.columns()},
-          _rowsPaddedSize{padSize(original.rows())},
-          _packs(padSize(original.rows()) * original.columns())
+    SOAMatrix::SOAMatrix(const size_t rows, const size_t columns,
+                         const float initialValue) noexcept
+        : _rows{rows}, _columns{columns}, _rowsPaddedSize{padSize(rows)},
+          _packs(padSize(rows) * columns)
     {
-        assert(original.rows() > 0);
-        assert(original.columns() > 0);
+        assert(rows > 0);
+        assert(columns > 0);
 
         for (auto && pack : this->_packs)
         {
             _mm256_store_ps(pack.data(), _mm256_set1_ps(PADDING_VALUE));
         }
 
-        // the following code looks like a copy operation of the data of the
-        // original AOSMatrix into this SOAMatrix however, it is the
-        // conversion of the layout of the data from AOS to SOA by simply
-        // transposing it in memory. thereby, the count of elements keeps
-        // the same as does the unpadded size of the data and the data
-        // itself.
         for (size_t r{0}; r < this->_rows; ++r)
         {
             for (size_t c{0}; c < this->_columns; ++c)
             {
                 // see "float & at(size_t r, size_t c)" for details
-                this->at(r, c) = original.at(r, c);
+                this->at(r, c) = initialValue;
             }
         }
     }

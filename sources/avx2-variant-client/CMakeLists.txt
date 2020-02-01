@@ -16,7 +16,6 @@ source_group(
 )
 
 add_dependencies(${PROJECT_NAME}
-    scalar-variant
     avx2-variant
 )
 

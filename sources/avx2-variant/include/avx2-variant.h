@@ -1,7 +1,5 @@
 #pragma once
 
-#include "scalar-variant.h"
-
 #include <array>
 #include <vector>
 
@@ -17,8 +15,7 @@ namespace matrixmultiplication::avx2
         std::vector<AVXPack> _packs;
 
       public:
-        static constexpr float INITIAL_VALUE =
-            matrixmultiplication::scalar::ScalarMatrix::INITIAL_VALUE;
+        static constexpr float INITIAL_VALUE = 0.0F;
 
         typedef std::vector<AVXPack>::const_iterator const_iterator;
         typedef std::vector<AVXPack>::iterator iterator;
@@ -48,8 +45,10 @@ namespace matrixmultiplication::avx2
       public:
         typedef std::vector<AVXPack>::const_iterator const_iterator;
 
-        explicit SOAMatrix(const matrixmultiplication::scalar::ScalarMatrix &
-                               original) noexcept;
+        static constexpr float INITIAL_VALUE = 1.0F;
+
+        explicit SOAMatrix(const std::size_t rows, const std::size_t columns,
+                           const float initialValue = INITIAL_VALUE) noexcept;
 
         std::vector<AVXPack> & packs() noexcept;
         const std::vector<AVXPack> & packs() const noexcept;
