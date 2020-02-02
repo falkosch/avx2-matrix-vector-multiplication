@@ -31,6 +31,31 @@ namespace matrixmultiplication::avx2
             }
         }
 
+        GIVEN("a pack-size fitting matrix")
+        {
+            const SOAMatrix matrix{8, 8};
+
+            WHEN("querying the rows count")
+            {
+                const auto actualRows = matrix.rows();
+
+                THEN("it returns 8")
+                {
+                    REQUIRE(actualRows == 8);
+                }
+            }
+
+            WHEN("querying the columns count")
+            {
+                const auto actualColumns = matrix.columns();
+
+                THEN("it returns 8")
+                {
+                    REQUIRE(actualColumns == 8);
+                }
+            }
+        }
+
         GIVEN("any squared matrix")
         {
             const SOAMatrix matrix{100, 100};
