@@ -52,22 +52,16 @@ pipeline {
 
         stage("prepare") {
           steps {
+            sh "rm -rf ${BW_OUTPUT_DIR} build/*"
+            sh "mkdir -p ${BW_OUTPUT_DIR}"
             sh "chmod +x ./*.sh"
             sh "./install-dependencies-with-local-conan.sh"
           }
         }
 
-        stage("build") {
+        stage("build & tests") {
           steps {
-            sh "rm -rf ${BW_OUTPUT_DIR} build/ci"
-            sh "mkdir -p ${BW_OUTPUT_DIR}"
-            sh "build-wrapper-linux-x86-64 --out-dir ${BW_OUTPUT_DIR} ./build-with-local-cc.sh"
-          }
-        }
-
-        stage("test") {
-          steps {
-            sh "./ci-reports-with-local-cc.sh"
+            sh "build-wrapper-linux-x86-64 --out-dir ${BW_OUTPUT_DIR} ./ci-reports-with-local-cc.sh"
           }
         }
 
