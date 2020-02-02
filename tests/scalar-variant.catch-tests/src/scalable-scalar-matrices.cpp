@@ -4,34 +4,9 @@ using Catch::Matchers::Equals;
 
 namespace matrixmultiplication::scalar
 {
-    SCENARIO("creating scalar matrices")
+    SCENARIO("scalable scalar matrices")
     {
-        GIVEN("an empty matrix")
-        {
-            const ScalarMatrix matrix{0, 0};
-
-            WHEN("querying the rows count")
-            {
-                const auto actualRows = matrix.rows();
-
-                THEN("it returns 0")
-                {
-                    REQUIRE(actualRows == 0);
-                }
-            }
-
-            WHEN("querying the columns count")
-            {
-                const auto actualColumns = matrix.columns();
-
-                THEN("it returns 0")
-                {
-                    REQUIRE(actualColumns == 0);
-                }
-            }
-        }
-
-        GIVEN("an 1x1 matrix")
+        GIVEN("a 1x1 matrix")
         {
             const ScalarMatrix matrix{1, 1};
 

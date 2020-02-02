@@ -5,7 +5,8 @@ project("scalar-variant.catch-tests"
 
 add_executable(${PROJECT_NAME}
     "src/catch_main.cpp"
-    "src/creating-scalar-matrices.cpp"
+    "src/modifiable-scalar-matrices.cpp"
+    "src/scalable-scalar-matrices.cpp"
     "src/scalar-transformation.cpp"
 )
 

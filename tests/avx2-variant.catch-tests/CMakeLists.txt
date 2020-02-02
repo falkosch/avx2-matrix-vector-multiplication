@@ -5,7 +5,9 @@ project("avx2-variant.catch-tests"
 
 add_executable(${PROJECT_NAME}
     "src/catch_main.cpp"
-    "src/creating-avx2-matrices.cpp"
+    "src/modifiable-avx2-matrices.cpp"
+    "src/scalable-avx2-matrices.cpp"
+    "src/avx2-transformation.cpp"
 )
 
 source_group(

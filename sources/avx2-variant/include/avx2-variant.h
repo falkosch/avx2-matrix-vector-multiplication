@@ -45,7 +45,7 @@ namespace matrixmultiplication::avx2
       public:
         typedef std::vector<AVXPack>::const_iterator const_iterator;
 
-        static constexpr float INITIAL_VALUE = 1.0F;
+        static constexpr float INITIAL_VALUE = 0.0F;
 
         explicit SOAMatrix(const std::size_t rows, const std::size_t columns,
                            const float initialValue = INITIAL_VALUE) noexcept;

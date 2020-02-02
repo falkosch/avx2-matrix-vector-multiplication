@@ -2,14 +2,14 @@
 
 using Catch::Matchers::Equals;
 
-namespace matrixmultiplication::scalar
+namespace matrixmultiplication::avx2
 {
-    SCENARIO("scalar transformation")
+    SCENARIO("avx2 transformation")
     {
         GIVEN("a 1D vector and a 1x1 matrix")
         {
-            const ScalarVector sampleVector{1.0F};
-            const ScalarMatrix identityMatrix{1, 1, 1.0F};
+            const AVXVector sampleVector(1, 1.0F);
+            const SOAMatrix identityMatrix{1, 1, 1.0F};
 
             WHEN("transforming the vector by the matrix")
             {
@@ -22,17 +22,24 @@ namespace matrixmultiplication::scalar
 
                 THEN("the resulting vector is equal to the given vector")
                 {
-                    REQUIRE_THAT(result, Equals(sampleVector));
+                    REQUIRE_THAT(result.packs(), Equals(sampleVector.packs()));
                 }
             }
         }
 
         GIVEN("a 4D vector and a 4x4 identity matrix")
         {
-            const ScalarVector sampleVector{1.0F, 2.0F, 3.0F, 4.0F};
+            const auto sampleVector = []() {
+                AVXVector v(4);
+                v.at(0) = 1.0F;
+                v.at(1) = 2.0F;
+                v.at(2) = 3.0F;
+                v.at(3) = 4.0F;
+                return v;
+            }();
 
             const auto identityMatrix = []() {
-                ScalarMatrix m{4, 4};
+                SOAMatrix m{4, 4};
                 m.at(0, 0) = 1.0F;
                 m.at(1, 1) = 1.0F;
                 m.at(2, 2) = 1.0F;
@@ -40,7 +47,7 @@ namespace matrixmultiplication::scalar
                 return m;
             }();
 
-            WHEN("transforming the vector by the matrix")
+            WHEN("transforming the vector is transformed by the matrix")
             {
                 const auto result = transform(identityMatrix, sampleVector);
 
@@ -51,18 +58,30 @@ namespace matrixmultiplication::scalar
 
                 THEN("the resulting vector is equal to the given vector")
                 {
-                    REQUIRE_THAT(result, Equals(sampleVector));
+                    REQUIRE_THAT(result.packs(), Equals(sampleVector.packs()));
                 }
             }
         }
 
         GIVEN("a 10D vector and a 9x10 matrix")
         {
-            const ScalarVector sampleVector{1.0F, 2.0F, 3.0F, 4.0F, 5.0F,
-                                            6.0F, 7.0F, 8.0F, 9.0F, 10.0F};
+            const auto sampleVector = []() {
+                AVXVector v(10);
+                v.at(0) = 1.0F;
+                v.at(1) = 2.0F;
+                v.at(2) = 3.0F;
+                v.at(3) = 4.0F;
+                v.at(4) = 5.0F;
+                v.at(5) = 6.0F;
+                v.at(6) = 7.0F;
+                v.at(7) = 8.0F;
+                v.at(8) = 9.0F;
+                v.at(9) = 10.0F;
+                return v;
+            }();
 
             const auto identityMatrix = []() {
-                ScalarMatrix m{9, 10};
+                SOAMatrix m{9, 10};
                 m.at(0, 0) = 1.0F;
                 m.at(1, 1) = 1.0F;
                 m.at(2, 2) = 1.0F;
@@ -87,10 +106,22 @@ namespace matrixmultiplication::scalar
                 THEN("the resulting vector is equal to the first 9 components "
                      "of the given vector")
                 {
-                    const ScalarVector expectedVector{
-                        1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F};
+                    const auto expectedVector = []() {
+                        AVXVector v(9);
+                        v.at(0) = 1.0F;
+                        v.at(1) = 2.0F;
+                        v.at(2) = 3.0F;
+                        v.at(3) = 4.0F;
+                        v.at(4) = 5.0F;
+                        v.at(5) = 6.0F;
+                        v.at(6) = 7.0F;
+                        v.at(7) = 8.0F;
+                        v.at(8) = 9.0F;
+                        return v;
+                    }();
 
-                    REQUIRE_THAT(result, Equals(expectedVector));
+                    REQUIRE_THAT(result.packs(),
+                                 Equals(expectedVector.packs()));
                 }
             }
         }
