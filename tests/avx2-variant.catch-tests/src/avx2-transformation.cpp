@@ -4,7 +4,7 @@ using Catch::Matchers::Equals;
 
 namespace matrixmultiplication::avx2
 {
-    SCENARIO("avx2 transformation")
+    SCENARIO("AVX2 transformation")
     {
         GIVEN("a 1D vector and a 1x1 matrix")
         {

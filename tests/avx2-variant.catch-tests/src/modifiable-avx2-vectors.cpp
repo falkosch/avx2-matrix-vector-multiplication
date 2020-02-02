@@ -4,15 +4,15 @@ using Catch::Matchers::Equals;
 
 namespace matrixmultiplication::avx2
 {
-    SCENARIO("modifiable AVX2 matrices")
+    SCENARIO("modifiable AVX2 vectors")
     {
-        GIVEN("an initial arbitrary matrix")
+        GIVEN("an initial arbitrary vector")
         {
-            const SOAMatrix matrix{3, 2};
+            const AVXVector vector(3);
 
-            WHEN("querying its value at (0, 0)")
+            WHEN("querying its value at 0")
             {
-                const auto actualValue = matrix.at(0, 0);
+                const auto actualValue = vector.at(0);
 
                 THEN("it returns the default initial value")
                 {
@@ -20,9 +20,9 @@ namespace matrixmultiplication::avx2
                 }
             }
 
-            WHEN("querying its value at (2, 1)")
+            WHEN("querying its value at 2")
             {
-                const auto actualValue = matrix.at(2, 1);
+                const auto actualValue = vector.at(2);
 
                 THEN("it returns the default initial value")
                 {
@@ -31,13 +31,13 @@ namespace matrixmultiplication::avx2
             }
         }
 
-        GIVEN("a matrix of same size but with different initial value")
+        GIVEN("a vector of same size but with different initial value")
         {
-            const SOAMatrix matrix{3, 2, 1.0F};
+            const AVXVector vector(3, 1.0F);
 
-            WHEN("querying its value at (0, 0)")
+            WHEN("querying its value at 0")
             {
-                const auto actualValue = matrix.at(0, 0);
+                const auto actualValue = vector.at(0);
 
                 THEN("it returns another initial value")
                 {
@@ -45,9 +45,9 @@ namespace matrixmultiplication::avx2
                 }
             }
 
-            WHEN("querying its value at (2, 1)")
+            WHEN("querying its value at 2")
             {
-                const auto actualValue = matrix.at(2, 1);
+                const auto actualValue = vector.at(2);
 
                 THEN("it returns another initial value")
                 {
@@ -56,18 +56,18 @@ namespace matrixmultiplication::avx2
             }
         }
 
-        GIVEN("a mutated matrix of same size")
+        GIVEN("a mutated vector of same size")
         {
-            const auto matrix = [] {
-                SOAMatrix m{3, 2};
-                m.at(0, 0) = 2.0F;
-                m.at(1, 1) = 2.0F;
-                return m;
+            const auto vector = [] {
+                AVXVector v(3);
+                v.at(0) = 2.0F;
+                v.at(1) = 2.0F;
+                return v;
             }();
 
-            WHEN("querying modified value at (0, 0)")
+            WHEN("querying modified value at 0")
             {
-                const auto actualValue = matrix.at(0, 0);
+                const auto actualValue = vector.at(0);
 
                 THEN("it returns the modified value")
                 {
@@ -75,9 +75,9 @@ namespace matrixmultiplication::avx2
                 }
             }
 
-            WHEN("querying not modified value at (2, 1)")
+            WHEN("querying not modified value at 2")
             {
-                const auto actualValue = matrix.at(2, 1);
+                const auto actualValue = vector.at(2);
 
                 THEN("it returns the default initial value")
                 {

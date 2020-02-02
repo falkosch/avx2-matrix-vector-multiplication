@@ -12,16 +12,16 @@ using namespace std;
 
 namespace matrixmultiplication::avx2
 {
-    // value of elements added due to padding of the data sizes
+    // Value of elements added due to padding of the data sizes
     constexpr float PADDING_VALUE{-0.0F};
 
-    // we have 8 single precision float elements in an AVX register
+    // We have 8 single precision float elements in an AVX register
     constexpr size_t NUM_FLOATS_PER_AVX_REGISTER{sizeof(__m256) /
                                                  sizeof(float)};
 
-    // we pad lengths by the count of elements in the AVX registers
+    // We pad lengths by the count of elements in the AVX registers
     // so that we have it easier to handle the vector data in the
-    // transformation
+    // transformation.
     auto padSize(const size_t size) noexcept
     {
         assert(size > 0);
@@ -48,7 +48,8 @@ namespace matrixmultiplication::avx2
                            const __m256 & inputBroadcast,
                            const __m256 & partialResult) noexcept
     {
-        // will be optimized to a real hardware FMA op if available
+        // There is no need to enforce an FMA op here. An intelligent compiler
+        // will optimize it to an FMA op if it is available for the target ARCH.
         return _mm256_add_ps(_mm256_mul_ps(partialColumn, inputBroadcast),
                              partialResult);
     }
@@ -114,7 +115,6 @@ namespace matrixmultiplication::avx2
         {
             for (size_t c{0}; c < this->_columns; ++c)
             {
-                // see "float & at(size_t r, size_t c)" for details
                 this->at(r, c) = initialValue;
             }
         }
@@ -154,10 +154,10 @@ namespace matrixmultiplication::avx2
         return pack.at(r % NUM_FLOATS_PER_AVX_REGISTER);
     }
 
-    // multiplies a broadcast vector of one column element in the input
-    // vector element-wise with the column vector of a matrix (that is the
-    // row in the SOAMatrix). helps the SOAMatrix.avxTransform(const
-    // AVXVector &) to split some code.
+    // Multiplies a broadcast vector of one column element in the input
+    // vector element-wise with the column vector of a matrix (that is
+    // represented by a row in the SOAMatrix). That helps to split the code of
+    // the transform function.
     class TransformHelper
     {
         size_t packsPerColumn;
@@ -186,9 +186,9 @@ namespace matrixmultiplication::avx2
                          static_cast<int64_t>(column * this->packsPerColumn);
             for (auto && resultPack : _resultVector.packs())
             {
-                auto partialColumn = _mm256_load_ps(rowIt->data());
-                auto partialResult = _mm256_load_ps(resultPack.data());
-                auto intermediate =
+                const auto partialColumn = _mm256_load_ps(rowIt->data());
+                const auto partialResult = _mm256_load_ps(resultPack.data());
+                const auto intermediate =
                     multiplyAdd(partialColumn, inputBroadcast, partialResult);
                 _mm256_store_ps(resultPack.data(), intermediate);
 
@@ -202,7 +202,7 @@ namespace matrixmultiplication::avx2
     {
         assert(inputVector.size() == matrix.columns());
 
-        // HERE is the MOST IMPORTANT code in this example.
+        // Here is the most important code in this example.
 
         const auto rows = matrix.rows();
         const auto columns = matrix.columns();
@@ -211,27 +211,27 @@ namespace matrixmultiplication::avx2
 
         TransformHelper transformHelper{rows, matrix.packs().cbegin(), result};
 
-        // remember that we have the SOA layout, so we iterate on the
+        // Remember that we have the SOA layout, so we iterate on the
         // columns in the outer most loop. in the inner loop, we vertically
         // do the partial dot product step by step.
         size_t c{0};
         for (auto && inputPack : inputVector.packs())
         {
-            // thanks to the padding we can safely load partials of the data
-            // into one whole AVX register at once
-            auto partialInput = _mm256_load_ps(inputPack.data());
+            // Thanks to the padding we can safely load partials of the data
+            // into one whole AVX register at once.
+            const auto partialInput = _mm256_load_ps(inputPack.data());
 
-            // we unroll the NUM_FLOATS_PER_AVX_REGISTER-times loop on the
+            // We unroll the NUM_FLOATS_PER_AVX_REGISTER-times loop on the
             // partial input vector and broadcast each element for one
-            // iteration in that loop
+            // iteration in that loop.
+            const auto partialInputLow = unpackLow(partialInput);
 
-            auto partialInputLow = unpackLow(partialInput);
-            auto partialInputHigh = unpackHigh(partialInput);
+            // Even the last AVXPack will always have at least one component, so
+            // we do not need a check for that.
+            transformHelper(c + 0, broadcast<0>(partialInputLow));
 
-            if ((c + 0) < columns)
-            {
-                transformHelper(c + 0, broadcast<0>(partialInputLow));
-            }
+            // However, all other components in the last pack could be part of
+            // the padding.
             if ((c + 1) < columns)
             {
                 transformHelper(c + 1, broadcast<1>(partialInputLow));
@@ -247,19 +247,22 @@ namespace matrixmultiplication::avx2
 
             if ((c + 4) < columns)
             {
+                const auto partialInputHigh = unpackHigh(partialInput);
+
                 transformHelper(c + 4, broadcast<0>(partialInputHigh));
-            }
-            if ((c + 5) < columns)
-            {
-                transformHelper(c + 5, broadcast<1>(partialInputHigh));
-            }
-            if ((c + 6) < columns)
-            {
-                transformHelper(c + 6, broadcast<2>(partialInputHigh));
-            }
-            if ((c + 7) < columns)
-            {
-                transformHelper(c + 7, broadcast<3>(partialInputHigh));
+
+                if ((c + 5) < columns)
+                {
+                    transformHelper(c + 5, broadcast<1>(partialInputHigh));
+                }
+                if ((c + 6) < columns)
+                {
+                    transformHelper(c + 6, broadcast<2>(partialInputHigh));
+                }
+                if ((c + 7) < columns)
+                {
+                    transformHelper(c + 7, broadcast<3>(partialInputHigh));
+                }
             }
 
             c += NUM_FLOATS_PER_AVX_REGISTER;

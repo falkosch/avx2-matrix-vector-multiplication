@@ -4,7 +4,7 @@ using Catch::Matchers::Equals;
 
 namespace matrixmultiplication::avx2
 {
-    SCENARIO("scalable avx2 matrices")
+    SCENARIO("scalable AVX2 matrices")
     {
         GIVEN("a 1x1 matrix")
         {
