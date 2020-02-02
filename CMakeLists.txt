@@ -53,7 +53,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         -Wextra
         -pedantic
         -Wabi=17
-        -Waggregate-return
+        #-Waggregate-return
         -Walloc-zero
         -Walloca
         -Wcast-align
@@ -65,7 +65,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         -Wduplicated-branches
         -Wduplicated-cond
         -Wfloat-conversion
-        -Wfloat-equal
+        #-Wfloat-equal
         -Wformat-nonliteral
         -Wformat-security
         -Wformat-signedness
