@@ -2,4 +2,6 @@
 
 . ./build-with-local-cc.sh
 
-find "$(pwd)/${OUTPUT_DIR}/tests" -executable -type f -print -exec {} -d yes \;
+TESTS_DIR="$(pwd)/${OUTPUT_DIR}/tests"
+
+find "${SOURCES_DIR}" -executable -type f -print -exec {} -d yes \;

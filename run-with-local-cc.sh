@@ -2,4 +2,6 @@
 
 . ./build-with-local-cc.sh
 
-(cd $(pwd)/${OUTPUT_DIR}/sources && find . -executable -type f -print -exec {} \;)
+SOURCES_DIR="$(pwd)/${OUTPUT_DIR}/sources"
+
+find "${SOURCES_DIR}" -executable -type f -print -exec {} \;
