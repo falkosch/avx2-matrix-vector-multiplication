@@ -1,7 +1,9 @@
 pipeline {
-  agent none
+  agent any
 
   options {
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+    preserveStashes(buildCount: 3)
     skipStagesAfterUnstable()
     skipDefaultCheckout()
     timeout(time: 1, unit: 'HOURS')
@@ -93,16 +95,32 @@ pipeline {
       }
 
       steps {
-        withSonarQubeEnv('sonarqube') {
-          sh "sonar-scanner -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.build-wrapper-output=${BW_OUTPUT_DIR}"
-        }
+        lock(resource: 'sonarcloud-avx2-matrix-vector-multiplication') {
+          withSonarQubeEnv('sonarqube') {
+            sh "sonar-scanner -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.build-wrapper-output=${BW_OUTPUT_DIR}"
+          }
 
-        sleep 3
+          sleep time: 20, unit: 'SECONDS'
 
-        timeout(time: 1, unit: 'MINUTES') {
-          waitForQualityGate abortPipeline: true
+          timeout(time: 1, unit: 'MINUTES') {
+            waitForQualityGate abortPipeline: true
+          }
         }
       }
+    }
+  }
+
+  post {
+    failure {
+      script {
+        committerEmail = sh(returnStdout: true, script: 'git --no-pager show -s --format=\'%ae\'').trim()
+      }
+
+      mail(
+        to: "${committerEmail}",
+        subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
+        body: "Something is wrong with ${env.BUILD_URL}"
+      )
     }
   }
 }
