@@ -2,6 +2,7 @@
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=avx2-matrix-vector-multiplication&metric=alert_status)](https://sonarcloud.io/dashboard?id=avx2-matrix-vector-multiplication)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=avx2-matrix-vector-multiplication&metric=coverage)](https://sonarcloud.io/dashboard?id=avx2-matrix-vector-multiplication)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=avx2-matrix-vector-multiplication&metric=ncloc)](https://sonarcloud.io/dashboard?id=avx2-matrix-vector-multiplication)
 
 # What is it about?
 
