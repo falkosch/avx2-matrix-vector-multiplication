@@ -29,6 +29,14 @@ pipeline {
         }
       }
 
+      environment {
+        // Will be evaluated once the stage runs on the requested
+        // "docker && linux" agent, otherwise HOME may have the already
+        // evaluated value from the "pipeline" level, which could be a Windows
+        // path if the master runs on that OS.
+        HOME = "${env.WORKSPACE}"
+      }
+
       stages {
         stage('scm stage') {
           steps {
@@ -92,6 +100,14 @@ pipeline {
           image 'cross-gcc-windows-x64-sonar-scanner-cli:latest'
           label 'docker && linux'
         }
+      }
+
+      environment {
+        // Will be evaluated once the stage runs on the requested
+        // "docker && linux" agent, otherwise HOME may have the already
+        // evaluated value from the "pipeline" level, which could be a Windows
+        // path if the master runs on that OS.
+        HOME = "${env.WORKSPACE}"
       }
 
       steps {
