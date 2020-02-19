@@ -222,7 +222,6 @@ namespace matrixmultiplication::avx2
         assert(inputVector.size() == matrix.columns());
 
         const auto rows = matrix.rows();
-        const auto columns = matrix.columns();
 
         TransformHelper transformHelper{rows, matrix.packs().cbegin()};
         AVXVector resultVector{rows, 0.0F};
@@ -246,7 +245,7 @@ namespace matrixmultiplication::avx2
                 AVXVector intermediateVector{rows, 0.0F};
 
 #pragma omp for nowait
-                for (int i{0}; i < int{8}; ++i)
+                for (auto i = int{0}; i < int{8}; ++i)
                 {
                     const auto inputBroadcast = broadcast(partialInput, i);
                     intermediateVector = transformHelper(c + i, inputBroadcast);
