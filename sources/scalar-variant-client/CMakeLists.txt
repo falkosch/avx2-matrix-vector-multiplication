@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
-
 project("scalar-variant-client"
     LANGUAGES CXX
     VERSION 1.0.0
@@ -34,18 +32,14 @@ target_compile_definitions(${PROJECT_NAME}
         _CONSOLE
 )
 
+set_target_properties(${PROJECT_NAME}
+    PROPERTIES
+        INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
+)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_link_libraries(${PROJECT_NAME}
-        PRIVATE
-            stdc++
-    )
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set_target_properties(${PROJECT_NAME}
-        PROPERTIES
-            INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-    )
-
     target_link_options(${PROJECT_NAME}
         PRIVATE
             /SUBSYSTEM:CONSOLE
