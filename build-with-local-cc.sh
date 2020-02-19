@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
-. __with-local-cc.sh
+. _build-env.sh
 
 cmake -B ${OUTPUT_DIR} \
-    -DCMAKE_VS_PLATFORM_NAME:STRING="${ARCH_TYPE}" \
-    -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+    -DCMAKE_VS_PLATFORM_NAME="${ARCH_TYPE}" \
+    -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+    ${CONFIGURE_ADD_ARGS}
 
 cmake --build ${OUTPUT_DIR} \
-    --clean-first \
-    --target avx2-variant-client \
-    --config ${BUILD_TYPE}
+    --target ${TARGET} \
+    --config ${BUILD_TYPE} \
+    ${BUILD_ADD_ARGS}

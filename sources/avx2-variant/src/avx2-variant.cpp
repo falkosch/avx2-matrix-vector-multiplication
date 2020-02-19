@@ -9,20 +9,19 @@
 #endif
 
 using namespace std;
-using namespace matrixmultiplication::scalar;
 
 namespace matrixmultiplication::avx2
 {
-    // value of elements added due to padding of the data sizes
+    // Value of elements added due to padding of the data sizes
     constexpr float PADDING_VALUE{-0.0F};
 
-    // we have 8 single precision float elements in an AVX register
+    // We have 8 single precision float elements in an AVX register
     constexpr size_t NUM_FLOATS_PER_AVX_REGISTER{sizeof(__m256) /
                                                  sizeof(float)};
 
-    // we pad lengths by the count of elements in the AVX registers
+    // We pad lengths by the count of elements in the AVX registers
     // so that we have it easier to handle the vector data in the
-    // transformation
+    // transformation.
     auto padSize(const size_t size) noexcept
     {
         assert(size > 0);
@@ -36,21 +35,22 @@ namespace matrixmultiplication::avx2
         return _mm256_permutevar8x32_ps(value, componentMask);
     }
 
-    auto unpackLow(const __m256 & packed) noexcept
+    const auto unpackLow(const __m256 & packed) noexcept
     {
         return _mm256_permute2f128_ps(packed, packed, 0);
     }
 
-    auto unpackHigh(const __m256 & packed) noexcept
+    const auto unpackHigh(const __m256 & packed) noexcept
     {
         return _mm256_permute2f128_ps(packed, packed, 0b00010001);
     }
 
-    auto multiplyAdd(const __m256 & partialColumn,
-                     const __m256 & inputBroadcast,
-                     const __m256 & partialResult) noexcept
+    const auto multiplyAdd(const __m256 & partialColumn,
+                           const __m256 & inputBroadcast,
+                           const __m256 & partialResult) noexcept
     {
-        // will be optimized to a real hardware FMA op if available
+        // There is no need to enforce an FMA op here. An intelligent compiler
+        // will optimize it to an FMA op if it is available for the target ARCH.
         return _mm256_add_ps(_mm256_mul_ps(partialColumn, inputBroadcast),
                              partialResult);
     }
@@ -60,6 +60,11 @@ namespace matrixmultiplication::avx2
         : _elements{elements}, _packs(padSize(elements))
     {
         assert(elements > 0);
+
+        for (auto && pack : this->_packs)
+        {
+            _mm256_store_ps(pack.data(), _mm256_set1_ps(PADDING_VALUE));
+        }
 
         for (size_t i{0}; i < this->_elements; ++i)
         {
@@ -94,31 +99,24 @@ namespace matrixmultiplication::avx2
         return pack.at(i % NUM_FLOATS_PER_AVX_REGISTER);
     }
 
-    SOAMatrix::SOAMatrix(const ScalarMatrix & original) noexcept
-        : _rows{original.rows()}, _columns{original.columns()},
-          _rowsPaddedSize{padSize(original.rows())},
-          _packs(padSize(original.rows()) * original.columns())
+    SOAMatrix::SOAMatrix(const size_t rows, const size_t columns,
+                         const float initialValue) noexcept
+        : _rows{rows}, _columns{columns}, _rowsPaddedSize{padSize(rows)},
+          _packs(padSize(rows) * columns)
     {
-        assert(original.rows() > 0);
-        assert(original.columns() > 0);
+        assert(rows > 0);
+        assert(columns > 0);
 
         for (auto && pack : this->_packs)
         {
             _mm256_store_ps(pack.data(), _mm256_set1_ps(PADDING_VALUE));
         }
 
-        // the following code looks like a copy operation of the data of the
-        // original AOSMatrix into this SOAMatrix however, it is the
-        // conversion of the layout of the data from AOS to SOA by simply
-        // transposing it in memory. thereby, the count of elements keeps
-        // the same as does the unpadded size of the data and the data
-        // itself.
         for (size_t r{0}; r < this->_rows; ++r)
         {
             for (size_t c{0}; c < this->_columns; ++c)
             {
-                // see "float & at(size_t r, size_t c)" for details
-                this->at(r, c) = original.at(r, c);
+                this->at(r, c) = initialValue;
             }
         }
     }
@@ -159,20 +157,21 @@ namespace matrixmultiplication::avx2
         return pack.at(r % NUM_FLOATS_PER_AVX_REGISTER);
     }
 
-    // multiplies a broadcast vector of one column element in the input
-    // vector element-wise with the column vector of a matrix (that is the
-    // row in the SOAMatrix). helps the SOAMatrix.avxTransform(const
-    // AVXVector &) to split some code.
-    struct TransformHelper
+    // Multiplies a broadcast vector of one column element in the input
+    // vector element-wise with the column vector of a matrix (that is
+    // represented by a row in the SOAMatrix). That helps to split the code of
+    // the transform function.
+    class TransformHelper
     {
-        size_t rows;
+        size_t _rows;
         size_t packsPerColumn;
-        vector<AVXPack>::const_iterator dataStart;
+        vector<AVXPack>::const_iterator _dataStart;
 
+      public:
         TransformHelper(
             const size_t rows,
             const vector<AVXPack>::const_iterator dataStart) noexcept
-            : rows(rows), packsPerColumn(padSize(rows)), dataStart(dataStart)
+            : _rows(rows), packsPerColumn(padSize(rows)), _dataStart(dataStart)
         {
             assert(rows > 0);
         }
@@ -185,9 +184,11 @@ namespace matrixmultiplication::avx2
             // column "c" in the AOS matrix, so that we can directly load
             // the data into fitting AVX registers, multiply the elements
             // and add the result back into our intermediate result vector.
-            AVXVector resultVector{rows, 0.0F};
-            auto rowIt = this->dataStart +
+            AVXVector resultVector{_rows, 0.0F};
+
+            auto rowIt = this->_dataStart +
                          static_cast<int64_t>(column * this->packsPerColumn);
+
             for (auto && resultPack : resultVector.packs())
             {
                 _mm256_store_ps(resultPack.data(),

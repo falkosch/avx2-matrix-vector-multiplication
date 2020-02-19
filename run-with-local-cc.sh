@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-. __with-local-cc.sh
+. ./build-with-local-cc.sh
 
-EXE_FILE="$(pwd)/${OUTPUT_DIR}/sources/avx2-variant-client/avx2-variant-client{.exe}"
+SOURCES_DIR="$(pwd)/${OUTPUT_DIR}/sources"
 
-(cd data && exec ${EXE_FILE})
+find "${SOURCES_DIR}" -executable -type f -print -exec {} \;

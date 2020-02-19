@@ -1,13 +1,15 @@
-cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
-
-project("avx2-variant"
+project("avx2-variant.catch-tests"
     LANGUAGES CXX
     VERSION 1.0.0
 )
 
-add_library(${PROJECT_NAME}
-    STATIC
-        "src/avx2-variant.cpp"
+add_executable(${PROJECT_NAME}
+    "src/catch_main.cpp"
+    "src/modifiable-avx2-matrices.cpp"
+    "src/modifiable-avx2-vectors.cpp"
+    "src/scalable-avx2-matrices.cpp"
+    "src/scalable-avx2-vectors.cpp"
+    "src/avx2-transformation.cpp"
 )
 
 source_group(
@@ -17,22 +19,22 @@ source_group(
 )
 
 add_dependencies(${PROJECT_NAME}
-    sources-build-aggregate
+    "avx2-variant"
 )
 
 target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-        sources-build-aggregate
+    PRIVATE
+        "avx2-variant"
 )
 
 target_include_directories(${PROJECT_NAME}
-    PUBLIC
+    PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        _LIB
+add_catch2_and_reporting_targets(
+    NAME "${PROJECT_NAME}-reports"
+    TARGET ${PROJECT_NAME}
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

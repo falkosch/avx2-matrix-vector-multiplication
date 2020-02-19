@@ -1,13 +1,11 @@
 #include "avx2-variant-client.h"
 
 #include <avx2-variant.h>
-#include <scalar-variant.h>
 
 #include <cstdint>
 #include <iostream>
 
 using namespace std;
-using namespace matrixmultiplication::scalar;
 using namespace matrixmultiplication::avx2;
 
 int main() noexcept
@@ -16,15 +14,13 @@ int main() noexcept
     // when running the code. 10000x10000 already uses around 220 MB memory. On
     // my i7 7700k it runs within 25s in debug mode. In release mode it is less
     // than 1s.
-    const size_t inputVectorSize{10000};
-    const size_t outputVectorSize{10000};
-
-    const ScalarMatrix aosMatrix{outputVectorSize, inputVectorSize};
+    const size_t inputVectorSize{100};
+    const size_t outputVectorSize{100};
 
     // 1: we use a "structure of arrays" memory layout for the transform matrix
     // so that we can compute the transform in SIMD preferred way
-    const SOAMatrix soaMatrix{aosMatrix};
-    const AVXVector inputVector{inputVectorSize};
+    const SOAMatrix soaMatrix{outputVectorSize, inputVectorSize, 1.0F};
+    const AVXVector inputVector(inputVectorSize, 1.0F);
 
     // 2: transform the input vector to the output vector
     const auto outputVector = transform(soaMatrix, inputVector);
@@ -36,6 +32,7 @@ int main() noexcept
     {
         cout << outputVector.at(i) << " ";
     }
+    cout << endl;
 
     return 0;
 }
