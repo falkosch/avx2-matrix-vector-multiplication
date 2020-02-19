@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
-
 project("avx2-variant"
     LANGUAGES CXX
     VERSION 1.0.0
@@ -33,6 +31,11 @@ target_include_directories(${PROJECT_NAME}
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         _LIB
+)
+
+set_target_properties(${PROJECT_NAME}
+    PROPERTIES
+        INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

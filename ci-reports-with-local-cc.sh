@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-TARGET="ci"
-OUTPUT_DIR="build/ci"
+TARGET="${TARGET:-ci}"
+OUTPUT_DIR="${OUTPUT_DIR:-build/ci}"
 
-CONFIGURE_ADD_ARGS=-DCOVERAGE="1"
-BUILD_ADD_ARGS="--clean-first"
+. ./_build-env.sh
+
+CONFIGURE_ADD_ARGS="${CONFIGURE_ADD_ARGS} -DCOVERAGE=\"1\""
+BUILD_ADD_ARGS="${BUILD_ADD_ARGS} --clean-first"
 
 . ./build-with-local-cc.sh

@@ -34,13 +34,14 @@ target_include_directories(${PROJECT_NAME}
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
+set_target_properties(${PROJECT_NAME}
+    PROPERTIES
+        INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
+)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set_target_properties(${PROJECT_NAME}
-        PROPERTIES
-            INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE
-    )
 
 else()
     message(FATAL_ERROR "no configuration for compiler ${CMAKE_CXX_COMPILER_ID}")
