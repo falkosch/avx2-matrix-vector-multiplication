@@ -55,12 +55,14 @@ namespace matrixmultiplication::avx2
                              partialResult);
     }
 
+    AVXVector::AVXVector() noexcept : _elements{0}, _packs(0)
+    {
+    }
+
     AVXVector::AVXVector(const size_t elements,
                          const float initialValue) noexcept
         : _elements{elements}, _packs(padSize(elements))
     {
-        assert(elements > 0);
-
         for (auto && pack : this->_packs)
         {
             _mm256_store_ps(pack.data(), _mm256_set1_ps(PADDING_VALUE));
@@ -183,7 +185,7 @@ namespace matrixmultiplication::avx2
             // fitting partial vectors of the elements of the corresponding
             // column "c" in the AOS matrix, so that we can directly load
             // the data into fitting AVX registers, multiply the elements
-            // and add the result back into our intermediate result vector.
+            // and put the result back into an intermediate result vector.
             AVXVector resultVector{_rows, 0.0F};
 
             auto rowIt = this->_dataStart +
@@ -191,10 +193,12 @@ namespace matrixmultiplication::avx2
 
             for (auto && resultPack : resultVector.packs())
             {
-                _mm256_store_ps(resultPack.data(),
-                                _mm256_mul_ps(_mm256_load_ps(rowIt->data()),
-                                              inputBroadcast));
-                rowIt++;
+                const auto partialColumn = _mm256_load_ps(rowIt->data());
+                const auto intermediate =
+                    _mm256_mul_ps(partialColumn, inputBroadcast);
+                _mm256_store_ps(resultPack.data(), intermediate);
+
+                ++rowIt;
             }
 
             return resultVector;
@@ -207,11 +211,12 @@ namespace matrixmultiplication::avx2
         auto intermediateIt = intermediateVector.packs().cbegin();
         for (auto && resultPack : resultVector.packs())
         {
-            auto resultData = resultPack.data();
-            _mm256_store_ps(
-                resultData,
-                _mm256_add_ps(_mm256_load_ps(resultData),
-                              _mm256_load_ps(intermediateIt->data())));
+            const auto resultData = resultPack.data();
+            const auto productPack = _mm256_load_ps(intermediateIt->data());
+            const auto sumPack =
+                _mm256_add_ps(_mm256_load_ps(resultData), productPack);
+            _mm256_store_ps(resultData, sumPack);
+
             ++intermediateIt;
         }
     }
@@ -222,6 +227,7 @@ namespace matrixmultiplication::avx2
         assert(inputVector.size() == matrix.columns());
 
         const auto rows = matrix.rows();
+        const auto columns = matrix.columns();
 
         TransformHelper transformHelper{rows, matrix.packs().cbegin()};
         AVXVector resultVector{rows, 0.0F};
@@ -242,13 +248,21 @@ namespace matrixmultiplication::avx2
             // And we use openmp for each iteration in that loop when the
 #pragma omp parallel
             {
-                AVXVector intermediateVector{rows, 0.0F};
+                AVXVector intermediateVector;
 
-#pragma omp for nowait
+#pragma omp for
                 for (auto i = int{0}; i < int{8}; ++i)
                 {
                     const auto inputBroadcast = broadcast(partialInput, i);
-                    intermediateVector = transformHelper(c + i, inputBroadcast);
+                    if ((c + i) < columns)
+                    {
+                        intermediateVector = transformHelper(
+                            c + static_cast<size_t>(i), inputBroadcast);
+                    }
+                    else
+                    {
+                        intermediateVector = AVXVector{rows, 0.0F};
+                    }
                 }
 
 #pragma omp critical

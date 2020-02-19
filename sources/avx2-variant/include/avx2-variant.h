@@ -20,6 +20,8 @@ namespace matrixmultiplication::avx2
         typedef std::vector<AVXPack>::const_iterator const_iterator;
         typedef std::vector<AVXPack>::iterator iterator;
 
+        explicit AVXVector() noexcept;
+
         explicit AVXVector(const std::size_t elements,
                            const float initialValue = INITIAL_VALUE) noexcept;
 
