@@ -228,20 +228,19 @@ namespace matrixmultiplication::avx2
             // And we use openmp for each iteration in that loop when the
 #pragma omp parallel
             {
-                AVXVector intermediateVector;
+                AVXVector intermediateVector{rows, 0.0F};
 
-#pragma omp for
+#pragma omp for nowait
                 for (auto i = int{0}; i < int{8}; ++i)
                 {
                     const auto inputBroadcast = broadcast(partialInput, i);
                     if ((c + i) < columns)
                     {
-                        intermediateVector = transformHelper(
+                        AVXVector product = transformHelper(
                             c + static_cast<size_t>(i), inputBroadcast);
-                    }
-                    else
-                    {
-                        intermediateVector = AVXVector{rows, 0.0F};
+
+                        mergeIntermediateIntoResult(product,
+                                                    intermediateVector);
                     }
                 }
 
