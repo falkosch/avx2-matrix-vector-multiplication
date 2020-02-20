@@ -35,26 +35,6 @@ namespace matrixmultiplication::avx2
         return _mm256_permutevar8x32_ps(value, componentMask);
     }
 
-    const auto unpackLow(const __m256 & packed) noexcept
-    {
-        return _mm256_permute2f128_ps(packed, packed, 0);
-    }
-
-    const auto unpackHigh(const __m256 & packed) noexcept
-    {
-        return _mm256_permute2f128_ps(packed, packed, 0b00010001);
-    }
-
-    const auto multiplyAdd(const __m256 & partialColumn,
-                           const __m256 & inputBroadcast,
-                           const __m256 & partialResult) noexcept
-    {
-        // There is no need to enforce an FMA op here. An intelligent compiler
-        // will optimize it to an FMA op if it is available for the target ARCH.
-        return _mm256_add_ps(_mm256_mul_ps(partialColumn, inputBroadcast),
-                             partialResult);
-    }
-
     AVXVector::AVXVector() noexcept : _elements{0}, _packs(0)
     {
     }
