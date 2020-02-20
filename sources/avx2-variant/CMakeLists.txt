@@ -15,12 +15,12 @@ source_group(
 )
 
 add_dependencies(${PROJECT_NAME}
-    sources-build-aggregate
+    "avx2-model"
 )
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        sources-build-aggregate
+        "avx2-model"
 )
 
 target_include_directories(${PROJECT_NAME}
