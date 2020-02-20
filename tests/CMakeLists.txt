@@ -1,19 +1,22 @@
 enable_testing()
 
-add_subdirectory("avx2-variant.catch-tests")
 add_subdirectory("scalar-variant.catch-tests")
-
-add_subdirectory("avx2-variant.native-tests")
+add_subdirectory("avx2-model.catch-tests")
+add_subdirectory("avx2-variant.catch-tests")
+add_subdirectory("avx2-variant-mt.catch-tests")
 
 add_custom_target(tests
     DEPENDS
-        "avx2-variant.catch-tests"
         "scalar-variant.catch-tests"
+        "avx2-model.catch-tests"
+        "avx2-variant.catch-tests"
+        "avx2-variant-mt.catch-tests"
 )
 
 add_custom_target(reports
     DEPENDS
-        "avx2-variant.catch-tests-reports"
         "scalar-variant.catch-tests-reports"
+        "avx2-model.catch-tests-reports"
+        "avx2-variant.catch-tests-reports"
+        "avx2-variant-mt.catch-tests-reports"
 )
-

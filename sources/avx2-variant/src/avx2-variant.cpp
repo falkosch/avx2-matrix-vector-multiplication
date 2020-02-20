@@ -12,23 +12,6 @@ using namespace std;
 
 namespace matrixmultiplication::avx2
 {
-    // Value of elements added due to padding of the data sizes
-    constexpr float PADDING_VALUE{-0.0F};
-
-    // We have 8 single precision float elements in an AVX register
-    constexpr size_t NUM_FLOATS_PER_AVX_REGISTER{sizeof(__m256) /
-                                                 sizeof(float)};
-
-    // We pad lengths by the count of elements in the AVX registers
-    // so that we have it easier to handle the vector data in the
-    // transformation.
-    auto padSize(const size_t size) noexcept
-    {
-        assert(size > 0);
-
-        return (size - size_t{1}) / NUM_FLOATS_PER_AVX_REGISTER + size_t{1};
-    }
-
     template <int i> const auto broadcast(const __m256 & value) noexcept
     {
         return _mm256_permute_ps(value, _MM_SHUFFLE(i, i, i, i));
@@ -54,118 +37,18 @@ namespace matrixmultiplication::avx2
                              partialResult);
     }
 
-    AVXVector::AVXVector(const size_t elements,
-                         const float initialValue) noexcept
-        : _elements{elements}, _packs(padSize(elements))
-    {
-        assert(elements > 0);
-
-        for (auto && pack : this->_packs)
-        {
-            _mm256_store_ps(pack.data(), _mm256_set1_ps(PADDING_VALUE));
-        }
-
-        for (size_t i{0}; i < this->_elements; ++i)
-        {
-            this->at(i) = initialValue;
-        }
-    }
-
-    std::vector<AVXPack> & AVXVector::packs() noexcept
-    {
-        return this->_packs;
-    }
-
-    const std::vector<AVXPack> & AVXVector::packs() const noexcept
-    {
-        return this->_packs;
-    }
-
-    std::size_t AVXVector::size() const noexcept
-    {
-        return this->_elements;
-    }
-
-    float & AVXVector::at(const size_t i) noexcept
-    {
-        auto & pack = this->_packs.at(i / NUM_FLOATS_PER_AVX_REGISTER);
-        return pack.at(i % NUM_FLOATS_PER_AVX_REGISTER);
-    }
-
-    float AVXVector::at(const size_t i) const noexcept
-    {
-        auto pack = this->_packs.at(i / NUM_FLOATS_PER_AVX_REGISTER);
-        return pack.at(i % NUM_FLOATS_PER_AVX_REGISTER);
-    }
-
-    SOAMatrix::SOAMatrix(const size_t rows, const size_t columns,
-                         const float initialValue) noexcept
-        : _rows{rows}, _columns{columns}, _rowsPaddedSize{padSize(rows)},
-          _packs(padSize(rows) * columns)
-    {
-        assert(rows > 0);
-        assert(columns > 0);
-
-        for (auto && pack : this->_packs)
-        {
-            _mm256_store_ps(pack.data(), _mm256_set1_ps(PADDING_VALUE));
-        }
-
-        for (size_t r{0}; r < this->_rows; ++r)
-        {
-            for (size_t c{0}; c < this->_columns; ++c)
-            {
-                this->at(r, c) = initialValue;
-            }
-        }
-    }
-
-    std::vector<AVXPack> & SOAMatrix::packs() noexcept
-    {
-        return this->_packs;
-    }
-
-    const std::vector<AVXPack> & SOAMatrix::packs() const noexcept
-    {
-        return this->_packs;
-    }
-
-    std::size_t SOAMatrix::rows() const noexcept
-    {
-        return this->_rows;
-    }
-
-    std::size_t SOAMatrix::columns() const noexcept
-    {
-        return this->_columns;
-    }
-
-    float & SOAMatrix::at(const size_t r, const size_t c) noexcept
-    {
-        auto i = r / NUM_FLOATS_PER_AVX_REGISTER + c * this->_rowsPaddedSize;
-        auto & pack = this->_packs.at(i);
-        return pack.at(r % NUM_FLOATS_PER_AVX_REGISTER);
-    }
-
-    float SOAMatrix::at(const size_t r, const size_t c) const noexcept
-    {
-        auto i = r / NUM_FLOATS_PER_AVX_REGISTER + c * this->_rowsPaddedSize;
-        auto pack = this->_packs.at(i);
-        return pack.at(r % NUM_FLOATS_PER_AVX_REGISTER);
-    }
-
     // Multiplies a broadcast vector of one column element in the input
     // vector element-wise with the column vector of a matrix (that is
     // represented by a row in the SOAMatrix). That helps to split the code of
     // the transform function.
-    class TransformHelper
+    class TransformOperation
     {
         size_t packsPerColumn;
         vector<AVXPack>::const_iterator _dataStart;
         AVXVector & _resultVector;
 
       public:
-        TransformHelper(const size_t rows,
+        TransformOperation(const size_t rows,
                         const vector<AVXPack>::const_iterator dataStart,
                         AVXVector & resultVector) noexcept
             : packsPerColumn(padSize(rows)), _dataStart(dataStart),
@@ -209,7 +92,7 @@ namespace matrixmultiplication::avx2
 
         AVXVector result{rows, 0.0F};
 
-        TransformHelper transformHelper{rows, matrix.packs().cbegin(), result};
+        TransformOperation transformOp{rows, matrix.packs().cbegin(), result};
 
         // Remember that we have the SOA layout, so we iterate on the
         // columns in the outer most loop. in the inner loop, we vertically
@@ -228,40 +111,40 @@ namespace matrixmultiplication::avx2
 
             // Even the last AVXPack will always have at least one component, so
             // we do not need a check for that.
-            transformHelper(c + 0, broadcast<0>(partialInputLow));
+            transformOp(c + 0, broadcast<0>(partialInputLow));
 
             // However, all other components in the last pack could be part of
             // the padding.
             if ((c + 1) < columns)
             {
-                transformHelper(c + 1, broadcast<1>(partialInputLow));
+                transformOp(c + 1, broadcast<1>(partialInputLow));
             }
             if ((c + 2) < columns)
             {
-                transformHelper(c + 2, broadcast<2>(partialInputLow));
+                transformOp(c + 2, broadcast<2>(partialInputLow));
             }
             if ((c + 3) < columns)
             {
-                transformHelper(c + 3, broadcast<3>(partialInputLow));
+                transformOp(c + 3, broadcast<3>(partialInputLow));
             }
 
             if ((c + 4) < columns)
             {
                 const auto partialInputHigh = unpackHigh(partialInput);
 
-                transformHelper(c + 4, broadcast<0>(partialInputHigh));
+                transformOp(c + 4, broadcast<0>(partialInputHigh));
 
                 if ((c + 5) < columns)
                 {
-                    transformHelper(c + 5, broadcast<1>(partialInputHigh));
+                    transformOp(c + 5, broadcast<1>(partialInputHigh));
                 }
                 if ((c + 6) < columns)
                 {
-                    transformHelper(c + 6, broadcast<2>(partialInputHigh));
+                    transformOp(c + 6, broadcast<2>(partialInputHigh));
                 }
                 if ((c + 7) < columns)
                 {
-                    transformHelper(c + 7, broadcast<3>(partialInputHigh));
+                    transformOp(c + 7, broadcast<3>(partialInputHigh));
                 }
             }
 

@@ -1,10 +1,10 @@
-project("avx2-variant-client"
+project("avx2-variant-mt-client"
     LANGUAGES CXX
     VERSION 1.0.0
 )
 
 add_executable(${PROJECT_NAME}
-    "src/avx2-variant-client.cpp"
+    "src/avx2-variant-mt-client.cpp"
 )
 
 source_group(
@@ -14,12 +14,12 @@ source_group(
 )
 
 add_dependencies(${PROJECT_NAME}
-    "avx2-variant"
+    "avx2-variant-mt"
 )
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        "avx2-variant"
+        "avx2-variant-mt"
 )
 
 target_include_directories(${PROJECT_NAME}

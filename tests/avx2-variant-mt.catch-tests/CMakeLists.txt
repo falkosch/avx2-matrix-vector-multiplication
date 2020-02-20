@@ -1,10 +1,11 @@
-project("avx2-variant-client"
+project("avx2-variant-mt.catch-tests"
     LANGUAGES CXX
     VERSION 1.0.0
 )
 
 add_executable(${PROJECT_NAME}
-    "src/avx2-variant-client.cpp"
+    "src/catch_main.cpp"
+    "src/avx2-transformation-mt.cpp"
 )
 
 source_group(
@@ -14,12 +15,12 @@ source_group(
 )
 
 add_dependencies(${PROJECT_NAME}
-    "avx2-variant"
+    "avx2-variant-mt"
 )
 
 target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-        "avx2-variant"
+    PRIVATE
+        "avx2-variant-mt"
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -27,9 +28,9 @@ target_include_directories(${PROJECT_NAME}
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-target_compile_definitions(${PROJECT_NAME}
-    PRIVATE
-        _CONSOLE
+add_catch2_and_reporting_targets(
+    NAME "${PROJECT_NAME}-reports"
+    TARGET ${PROJECT_NAME}
 )
 
 set_target_properties(${PROJECT_NAME}
@@ -40,10 +41,6 @@ set_target_properties(${PROJECT_NAME}
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_link_options(${PROJECT_NAME}
-        PRIVATE
-            /SUBSYSTEM:CONSOLE
-    )
 
 else()
     message(FATAL_ERROR "no configuration for compiler ${CMAKE_CXX_COMPILER_ID}")
