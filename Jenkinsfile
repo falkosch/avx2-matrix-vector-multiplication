@@ -23,7 +23,7 @@ pipeline {
     stage('build stage') {
       agent {
         docker {
-          image 'cross-gcc-windows-x64-sonar-build-wrapper:latest'
+          image 'schwabe/gcc-toolchain:latest'
           label 'docker && linux'
           args '--memory=1g --memory-swap=1g'
         }
@@ -91,39 +91,24 @@ pipeline {
             ])
           }
         }
-      }
-    }
+        
+        stage('sonar quality gate') {
+          steps {
+            lock(resource: 'sonarcloud-avx2-matrix-vector-multiplication') {
+              withSonarQubeEnv('sonarqube') {
+                sh "sonar-scanner -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.build-wrapper-output=${BW_OUTPUT_DIR}"
+              }
 
-    stage('sonar quality gate') {
-      agent {
-        docker {
-          image 'cross-gcc-windows-x64-sonar-scanner-cli:latest'
-          label 'docker && linux'
-        }
-      }
+              sleep time: 20, unit: 'SECONDS'
 
-      environment {
-        // Will be evaluated once the stage runs on the requested
-        // "docker && linux" agent, otherwise HOME may have the already
-        // evaluated value from the "pipeline" level, which could be a Windows
-        // path if the master runs on that OS.
-        HOME = "${env.WORKSPACE}"
-      }
-
-      steps {
-        lock(resource: 'sonarcloud-avx2-matrix-vector-multiplication') {
-          withSonarQubeEnv('sonarqube') {
-            sh "sonar-scanner -Dsonar.branch.name=${env.BRANCH_NAME} -Dsonar.cfamily.build-wrapper-output=${BW_OUTPUT_DIR}"
+              timeout(time: 1, unit: 'MINUTES') {
+                waitForQualityGate abortPipeline: true
+              }
+            } // sonarcloud-avx2-matrix-vector-multiplication
           }
-
-          sleep time: 20, unit: 'SECONDS'
-
-          timeout(time: 1, unit: 'MINUTES') {
-            waitForQualityGate abortPipeline: true
-          }
-        }
+        } // sonar quality gate
       }
-    }
+    } // build stage
   }
 
   post {
